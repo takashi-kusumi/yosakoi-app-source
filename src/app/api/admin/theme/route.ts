@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { performanceThemes, memberCategories } from "@/db/schema";
+import { performanceThemes, memberCategories, membershipFees } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth";
 import { newId } from "@/lib/id";
@@ -108,6 +108,67 @@ export async function POST(request: NextRequest) {
     return redirectWithMessage(request, "/admin/theme", {
       ok: `${toCarry.length}名分を前回の内容で引き継ぎました`,
     });
+  }
+
+  if (action === "rename") {
+    // テーマ名は文字列で年会費（membershipFees.theme）・部員の種類（memberCategories.theme）に
+    // ゆるく紐づいているため、リネーム時はそちらも追従させて記録が迷子にならないようにする。
+    const themeId = String(formData.get("themeId") || "");
+    const name = String(formData.get("name") || "").trim();
+    if (!name) {
+      return redirectWithMessage(request, "/admin/theme", { error: "テーマ名を入力してください" });
+    }
+    const [existing] = await db
+      .select()
+      .from(performanceThemes)
+      .where(eq(performanceThemes.id, themeId))
+      .limit(1);
+    if (!existing) {
+      return redirectWithMessage(request, "/admin/theme", { error: "対象のテーマが見つかりません" });
+    }
+    const oldName = existing.name;
+    if (oldName === name) {
+      return redirectWithMessage(request, "/admin/theme", { ok: "変更はありませんでした" });
+    }
+
+    try {
+      await db.update(performanceThemes).set({ name }).where(eq(performanceThemes.id, themeId));
+    } catch {
+      return redirectWithMessage(request, "/admin/theme", {
+        error: "同じ名前のテーマが既に存在します",
+      });
+    }
+    await db.update(membershipFees).set({ theme: name }).where(eq(membershipFees.theme, oldName));
+    await db
+      .update(memberCategories)
+      .set({ theme: name })
+      .where(eq(memberCategories.theme, oldName));
+
+    return redirectWithMessage(request, "/admin/theme", {
+      ok: `「${oldName}」を「${name}」に変更しました`,
+    });
+  }
+
+  if (action === "delete") {
+    // 現在のテーマは削除させない（切り替えてから削除してもらう）。年会費・部員の種類は
+    // テーマ名の文字列でゆるく紐づいているだけなので、ここでこの行を消しても
+    // 既存の記録（membershipFees / memberCategories）は残る。
+    const themeId = String(formData.get("themeId") || "");
+    const [existing] = await db
+      .select()
+      .from(performanceThemes)
+      .where(eq(performanceThemes.id, themeId))
+      .limit(1);
+    if (!existing) {
+      return redirectWithMessage(request, "/admin/theme", { error: "対象のテーマが見つかりません" });
+    }
+    if (existing.isCurrent) {
+      return redirectWithMessage(request, "/admin/theme", {
+        error: "現在のテーマは削除できません。先に別のテーマへ切り替えてください",
+      });
+    }
+    await db.delete(performanceThemes).where(eq(performanceThemes.id, themeId));
+    return redirectWithMessage(request, "/admin/theme", { ok: `「${existing.name}」を削除しました` });
   }
 
   if (action === "dismiss") {

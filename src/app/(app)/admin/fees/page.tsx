@@ -52,6 +52,8 @@ export default async function AdminFeesPage({
   ]);
 
   const unpaidCount = rows.filter((r) => !r.fee?.paid).length;
+  const remindTargets = rows.filter((r) => r.fee && !r.fee.paid).map((r) => r.member);
+  const remindTargetsWithLine = remindTargets.filter((m) => m.lineUserId).length;
 
   // 未作成（レコードが無い）人を、部員の種類ごとにグループ化する（一括作成用）
   const pendingByCategory = new Map<string, { label: string; count: number }>();
@@ -143,6 +145,31 @@ export default async function AdminFeesPage({
       <p className="text-xs text-neutral-500">
         {theme}: 対象 {rows.length}名 ・ 未払い {unpaidCount}名
       </p>
+
+      {remindTargets.length > 0 && (
+        <section className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-neutral-700">LINEでリマインド送信</h2>
+          <p className="text-xs text-neutral-400">
+            未払い（金額設定済み）: {remindTargets.length}名（LINE連携済み {remindTargetsWithLine}名）
+          </p>
+          <form action="/api/admin/fee-remind" method="POST" className="space-y-3">
+            <input type="hidden" name="theme" value={theme} />
+            <textarea
+              name="message"
+              rows={3}
+              placeholder="空欄の場合は定型メッセージを送信します"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              disabled={remindTargetsWithLine === 0}
+            >
+              未払い者に送信
+            </button>
+          </form>
+        </section>
+      )}
 
       {rows.length === 0 ? (
         <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-400">

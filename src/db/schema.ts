@@ -18,6 +18,7 @@ export const eventTypeEnum = pgEnum("event_type", [
 export const responseStatusEnum = pgEnum("response_status", [
   "ATTENDING",
   "NOT_ATTENDING",
+  "UNDECIDED",
 ]);
 export const surveyQuestionTypeEnum = pgEnum("survey_question_type", [
   "TEXT", // 自由記述
@@ -47,10 +48,14 @@ export const members = pgTable(
     pictureUrl: text("picture_url"),
     role: roleEnum("role").notNull().default("MEMBER"),
     isActive: boolean("is_active").notNull().default(true),
-    // 正部員登録（学年・パート所属・入館証発行用メールアドレス）関連
+    // 正部員登録（部員の属性・パート所属・入館証発行用メールアドレス）関連
     membershipStatus: membershipStatusEnum("membership_status").notNull().default("TRIAL"),
     email: text("email"),
-    grade: text("grade"),
+    attribute: text("attribute"),
+    // 部員の行動規範への同意日時（CODE_OF_CONDUCT_URL未設定の場合はこの画面自体を使わない）
+    codeOfConductAgreedAt: timestamp("code_of_conduct_agreed_at", { withTimezone: true }),
+    // お知らせ一覧を最後に開いた日時（バッジの未読件数の算出に使う。nullは「未読数を全件扱い」）
+    lastSeenNoticesAt: timestamp("last_seen_notices_at", { withTimezone: true }),
     // 体験参加者（LINEログインなし・既存の正部員がイベント画面から名前のみで追加）
     isGuest: boolean("is_guest").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -299,6 +304,10 @@ export const surveys = pgTable(
     // true: 全員対象 / false: target_groupsで指定したグループのみ対象
     targetAll: boolean("target_all").notNull().default(true),
     isOpen: boolean("is_open").notNull().default(true),
+    // 回答締切（任意）。設定すると、この日時を過ぎた回答は自動的に受け付けなくなる
+    // （isOpenの値自体は管理者が手動で変更するまで変わらない。実際に開いているかどうかの
+    // 判定は isSurveyOpen() ヘルパー（isOpen && 締切前）を必ず使うこと）
+    closesAt: timestamp("closes_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

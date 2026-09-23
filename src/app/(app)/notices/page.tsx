@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getNoticesList } from "@/lib/queries";
+import { getNoticesList, markNoticesSeen } from "@/lib/queries";
+import { getCurrentMember } from "@/lib/auth";
 import { formatDateTime } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { NoticeTypeFilter, resolveNoticeTypeFilter } from "@/components/NoticeTypeFilter";
@@ -10,7 +11,12 @@ export default async function NoticesPage({
   searchParams: Promise<{ ok?: string; error?: string; type?: string }>;
 }) {
   const { ok, error, type } = await searchParams;
+  const member = await getCurrentMember();
   const allRows = await getNoticesList();
+  // この一覧を開いたタイミングで「既読」にする（ボトムナビの未読バッジをクリアするため）
+  if (member) {
+    await markNoticesSeen(member.id);
+  }
   const typeFilter = resolveNoticeTypeFilter(type);
   const rows = typeFilter
     ? typeFilter === "NONE"

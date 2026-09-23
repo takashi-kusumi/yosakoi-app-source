@@ -38,6 +38,7 @@ export async function POST(
 
   const formData = await request.formData();
   const displayName = String(formData.get("displayName") || "").trim();
+  const email = String(formData.get("email") || "").trim();
   if (!displayName) {
     return redirectWithMessage(request, `/events/${eventId}`, {
       error: "体験参加者の名前を入力してください",
@@ -50,6 +51,7 @@ export async function POST(
       id: newId(),
       lineUserId: null,
       displayName,
+      email: email || null,
       role: "MEMBER",
       isActive: true,
       isGuest: true,

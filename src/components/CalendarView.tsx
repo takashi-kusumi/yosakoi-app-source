@@ -75,6 +75,13 @@ export function CalendarView({
         new Date(b.event.eventDate as string | Date).getTime()
     );
 
+  // カレンダーの日付タップ時のジャンプ先（同じ日の最初のイベントにだけid="day-YYYY-MM-DD"を振る）
+  const firstEventIdByDay = new Map<string, string>();
+  for (const row of monthEvents) {
+    const dayKey = jstDateKey(new Date(row.event.eventDate as string | Date));
+    if (!firstEventIdByDay.has(dayKey)) firstEventIdByDay.set(dayKey, row.event.id);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white px-3 py-2 shadow-sm">
@@ -106,13 +113,11 @@ export function CalendarView({
         <div className="grid grid-cols-7 gap-y-1">
           {cells.map((cell) => {
             const dayRows = byDay.get(cell.key) ?? [];
-            return (
-              <div
-                key={cell.key}
-                className={`flex min-h-14 flex-col items-center gap-1 rounded-lg py-1 ${
-                  cell.isToday ? "bg-orange-50" : ""
-                }`}
-              >
+            const cellClass = `flex min-h-14 flex-col items-center gap-1 rounded-lg py-1 ${
+              cell.isToday ? "bg-orange-50" : ""
+            } ${dayRows.length > 0 ? "active:bg-orange-100" : ""}`;
+            const content = (
+              <>
                 <span
                   className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${
                     cell.isToday
@@ -135,6 +140,16 @@ export function CalendarView({
                     <span className="text-[9px] leading-none text-neutral-400">+{dayRows.length - 3}</span>
                   )}
                 </div>
+              </>
+            );
+            // 予定がある日は、下の「今月の予定」一覧の該当箇所へジャンプできるようにする
+            return dayRows.length > 0 ? (
+              <a key={cell.key} href={`#day-${cell.key}`} className={cellClass}>
+                {content}
+              </a>
+            ) : (
+              <div key={cell.key} className={cellClass}>
+                {content}
               </div>
             );
           })}
@@ -166,8 +181,11 @@ export function CalendarView({
           </p>
         )}
         <ul className="space-y-2">
-          {monthEvents.map((row) => (
-            <li key={row.event.id}>
+          {monthEvents.map((row) => {
+            const dayKey = jstDateKey(new Date(row.event.eventDate as string | Date));
+            const anchorId = firstEventIdByDay.get(dayKey) === row.event.id ? `day-${dayKey}` : undefined;
+            return (
+            <li key={row.event.id} id={anchorId} className="scroll-mt-4">
               <Link
                 href={`/events/${row.event.id}`}
                 className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white px-4 py-3 shadow-sm"
@@ -193,7 +211,8 @@ export function CalendarView({
                 </span>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </section>
 

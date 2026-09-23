@@ -20,7 +20,7 @@ export async function POST(
   const status = formData.get("status");
   const redirectTo = safeRedirectTarget(formData.get("redirectTo"), "/events");
 
-  if (status !== "ATTENDING" && status !== "NOT_ATTENDING") {
+  if (status !== "ATTENDING" && status !== "NOT_ATTENDING" && status !== "UNDECIDED") {
     return redirectWithMessage(request, redirectTo, { error: "回答が不正です" });
   }
 

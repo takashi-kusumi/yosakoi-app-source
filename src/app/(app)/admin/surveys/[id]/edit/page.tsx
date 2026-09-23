@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSurveyWithQuestions, getAllGroups, getSurveyResponseCount } from "@/lib/queries";
+import { toDatetimeLocalValue } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { SurveyForm } from "@/components/SurveyForm";
 
@@ -32,6 +33,7 @@ export default async function EditSurveyPage({
           description: detail.survey.description ?? "",
           targetAll: detail.survey.targetAll,
           targetGroupIds: detail.targetGroupIds,
+          closesAtLocal: toDatetimeLocalValue(detail.survey.closesAt),
         }}
         initialQuestions={detail.questions.map((q) => ({
           type: q.type,

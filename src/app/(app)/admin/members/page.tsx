@@ -50,7 +50,7 @@ export default async function AdminMembersPage({
               <p className="text-[11px] text-neutral-400">
                 {m.role === "ADMIN" ? "管理者" : "メンバー"} ・{" "}
                 {m.isActive ? "有効" : "無効"}
-                {m.grade && ` ・ ${m.grade}`}
+                {m.attribute && ` ・ ${m.attribute}`}
                 {m.email && ` ・ ${m.email}`}
                 {categoryByMember.get(m.id) &&
                   ` ・ ${MEMBER_CATEGORY_LABELS[categoryByMember.get(m.id)!]}`}
@@ -89,7 +89,7 @@ export default async function AdminMembersPage({
               <th className="px-4 py-2">会員区分</th>
               <th className="px-4 py-2">権限</th>
               <th className="px-4 py-2">状態</th>
-              <th className="px-4 py-2">学年</th>
+              <th className="px-4 py-2">部員の属性</th>
               <th className="px-4 py-2">メール</th>
               <th className="px-4 py-2">部員の種類</th>
               <th className="px-4 py-2">操作</th>
@@ -119,7 +119,7 @@ export default async function AdminMembersPage({
                   {m.role === "ADMIN" ? "管理者" : "メンバー"}
                 </td>
                 <td className="px-4 py-2.5 text-neutral-500">{m.isActive ? "有効" : "無効"}</td>
-                <td className="px-4 py-2.5 text-neutral-500">{m.grade || "-"}</td>
+                <td className="px-4 py-2.5 text-neutral-500">{m.attribute || "-"}</td>
                 <td className="px-4 py-2.5 text-neutral-500">{m.email || "-"}</td>
                 <td className="px-4 py-2.5 text-neutral-500">
                   {categoryByMember.get(m.id)

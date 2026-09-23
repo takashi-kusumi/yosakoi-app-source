@@ -1,4 +1,4 @@
-type Status = "ATTENDING" | "NOT_ATTENDING" | null | undefined;
+type Status = "ATTENDING" | "NOT_ATTENDING" | "UNDECIDED" | null | undefined;
 
 export function RespondForm({
   eventId,
@@ -23,6 +23,20 @@ export function RespondForm({
           }`}
         >
           参加する
+        </button>
+      </form>
+      <form action={`/api/events/${eventId}/respond`} method="POST" className="flex-1">
+        <input type="hidden" name="status" value="UNDECIDED" />
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+        <button
+          type="submit"
+          className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+            currentStatus === "UNDECIDED"
+              ? "border-sky-600 bg-sky-600 text-white"
+              : "border-neutral-200 bg-white text-neutral-600 hover:border-sky-300"
+          }`}
+        >
+          未定
         </button>
       </form>
       <form action={`/api/events/${eventId}/respond`} method="POST" className="flex-1">

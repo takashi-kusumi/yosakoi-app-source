@@ -6,6 +6,7 @@ import {
   getMemberSurveyResponse,
 } from "@/lib/queries";
 import { FlashMessage } from "@/components/FlashMessage";
+import { formatDateTime, isSurveyOpen } from "@/lib/labels";
 
 export default async function SurveyAnswerPage({
   params,
@@ -38,13 +39,18 @@ export default async function SurveyAnswerPage({
             {detail.survey.description}
           </p>
         )}
+        {detail.survey.closesAt && (
+          <p className="mt-1 text-xs text-neutral-400">
+            回答締切: {formatDateTime(detail.survey.closesAt)}
+          </p>
+        )}
       </div>
 
       {!isTarget ? (
         <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-400">
           このアンケートの対象者ではありません
         </p>
-      ) : !detail.survey.isOpen ? (
+      ) : !isSurveyOpen(detail.survey) ? (
         <div className="space-y-3">
           <p className="rounded-lg bg-neutral-100 px-4 py-3 text-sm text-neutral-500">
             このアンケートは回答受付を終了しています

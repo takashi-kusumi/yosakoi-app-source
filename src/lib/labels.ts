@@ -75,18 +75,27 @@ export function formatDateTime(date: Date | string | null): string {
 export const STATUS_DOT_CLASS: Record<string, string> = {
   ATTENDING: "bg-orange-600",
   NOT_ATTENDING: "bg-neutral-400",
+  UNDECIDED: "bg-sky-400",
 };
 export const UNANSWERED_DOT_CLASS = "bg-amber-400";
 
 export const STATUS_BADGE_CLASS: Record<string, string> = {
   ATTENDING: "bg-orange-100 text-orange-700",
   NOT_ATTENDING: "bg-neutral-100 text-neutral-500",
+  UNDECIDED: "bg-sky-50 text-sky-700",
 };
 export const UNANSWERED_BADGE_CLASS = "bg-amber-50 text-amber-700";
+
+export const STATUS_TEXT_CLASS: Record<string, string> = {
+  ATTENDING: "text-orange-600",
+  NOT_ATTENDING: "text-neutral-400",
+  UNDECIDED: "text-sky-600",
+};
 
 export const STATUS_LABEL: Record<string, string> = {
   ATTENDING: "参加",
   NOT_ATTENDING: "不参加",
+  UNDECIDED: "未定",
 };
 
 /** <input type="datetime-local"> の value 用に、JSTの "YYYY-MM-DDTHH:mm" を返す */
@@ -117,6 +126,19 @@ export function parseJstDatetimeLocal(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) return null;
   const date = new Date(`${trimmed}:00+09:00`);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * アンケートが実際に回答受付中かどうか。isOpen=trueでも、closesAt（回答締切）を
+ * 過ぎていれば実質的に締め切り扱いにする（管理者が手動で締め切るのを待たない）。
+ */
+export function isSurveyOpen(survey: {
+  isOpen: boolean;
+  closesAt: Date | string | null;
+}): boolean {
+  if (!survey.isOpen) return false;
+  if (survey.closesAt && new Date(survey.closesAt).getTime() <= Date.now()) return false;
+  return true;
 }
 
 export function formatDate(date: Date | string | null): string {

@@ -1,6 +1,7 @@
 import { getCurrentTheme, getAllThemes, getPendingCategoryMembers } from "@/lib/queries";
 import { MEMBER_CATEGORY_LABELS } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
+import { RenameDeleteActions } from "@/components/RenameDeleteActions";
 
 export default async function AdminThemePage({
   searchParams,
@@ -137,13 +138,23 @@ export default async function AdminThemePage({
             {themes.map((t) => (
               <li
                 key={t.id}
-                className={`rounded-full border px-3 py-1 ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 ${
                   t.isCurrent
                     ? "border-orange-600 bg-orange-600 text-white"
                     : "border-neutral-200 text-neutral-500"
                 }`}
               >
-                {t.name}
+                <span>{t.name}</span>
+                <RenameDeleteActions
+                  actionPath="/api/admin/theme"
+                  idFieldName="themeId"
+                  id={t.id}
+                  name={t.name}
+                  deleteConfirmMessage={`「${t.name}」を削除しますか？演舞テーマの一覧から消えますが、このテーマ名で記録済みの年会費・部員の種類のデータは残ります。`}
+                  deleteDisabledReason={
+                    t.isCurrent ? "現在のテーマは削除できません（先に切り替えてください）" : undefined
+                  }
+                />
               </li>
             ))}
           </ul>

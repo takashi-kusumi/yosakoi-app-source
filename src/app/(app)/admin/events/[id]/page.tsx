@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEventWithResponses } from "@/lib/queries";
-import { EVENT_TYPE_LABELS, formatDateTime } from "@/lib/labels";
+import { EVENT_TYPE_LABELS, STATUS_LABEL, STATUS_TEXT_CLASS, formatDateTime } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { GuestActions } from "@/components/GuestActions";
 
@@ -157,12 +157,8 @@ export default async function AdminEventDetailPage({
                 )}
               </span>
               <span className="flex shrink-0 items-center gap-2">
-                <span
-                  className={
-                    response.status === "ATTENDING" ? "text-orange-600" : "text-neutral-400"
-                  }
-                >
-                  {response.status === "ATTENDING" ? "参加" : "不参加"}
+                <span className={STATUS_TEXT_CLASS[response.status] ?? "text-neutral-400"}>
+                  {STATUS_LABEL[response.status] ?? response.status}
                 </span>
                 {detail.event.feeAmount != null &&
                   (response.status === "ATTENDING" || response.feePaid) && (
@@ -197,6 +193,7 @@ export default async function AdminEventDetailPage({
                     eventId={detail.event.id}
                     memberId={m.id}
                     displayName={m.displayName}
+                    email={m.email}
                     status={response.status}
                   />
                 )}
@@ -246,10 +243,10 @@ export default async function AdminEventDetailPage({
                   </td>
                   <td
                     className={`py-2 pr-3 font-medium ${
-                      response.status === "ATTENDING" ? "text-orange-600" : "text-neutral-400"
+                      STATUS_TEXT_CLASS[response.status] ?? "text-neutral-400"
                     }`}
                   >
-                    {response.status === "ATTENDING" ? "参加" : "不参加"}
+                    {STATUS_LABEL[response.status] ?? response.status}
                   </td>
                   <td className="py-2 pr-3">
                     {detail.event.feeAmount != null &&
@@ -289,6 +286,7 @@ export default async function AdminEventDetailPage({
                         eventId={detail.event.id}
                         memberId={m.id}
                         displayName={m.displayName}
+                        email={m.email}
                         status={response.status}
                       />
                     ) : (

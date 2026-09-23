@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentMember } from "@/lib/auth";
 import { getSurveysForMember } from "@/lib/queries";
-import { formatDateTime } from "@/lib/labels";
+import { formatDateTime, isSurveyOpen } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 
 export default async function SurveysPage({
@@ -33,7 +33,7 @@ export default async function SurveysPage({
                 className="block rounded-xl border border-neutral-200 bg-white px-4 py-3 shadow-sm"
               >
                 <div className="mb-1 flex items-center gap-2">
-                  {!survey.isOpen ? (
+                  {!isSurveyOpen(survey) ? (
                     <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-500">
                       締切
                     </span>
@@ -48,7 +48,10 @@ export default async function SurveysPage({
                   )}
                 </div>
                 <p className="font-semibold text-neutral-900">{survey.title}</p>
-                <p className="text-xs text-neutral-500">{formatDateTime(survey.createdAt)}</p>
+                <p className="text-xs text-neutral-500">
+                  {formatDateTime(survey.createdAt)}
+                  {survey.closesAt && ` ・ 締切 ${formatDateTime(survey.closesAt)}`}
+                </p>
               </Link>
             </li>
           ))}

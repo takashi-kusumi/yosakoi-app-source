@@ -1,5 +1,6 @@
 import { getGroupMatrix } from "@/lib/queries";
 import { FlashMessage } from "@/components/FlashMessage";
+import { RenameDeleteActions } from "@/components/RenameDeleteActions";
 
 export default async function AdminGroupsPage({
   searchParams,
@@ -55,7 +56,16 @@ export default async function AdminGroupsPage({
                 </th>
                 {groups.map((g) => (
                   <th key={g.id} className="px-3 py-2 font-semibold text-neutral-600">
-                    {g.name}
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="truncate">{g.name}</span>
+                      <RenameDeleteActions
+                        actionPath="/api/admin/groups"
+                        idFieldName="groupId"
+                        id={g.id}
+                        name={g.name}
+                        deleteConfirmMessage={`「${g.name}」を削除しますか？メンバーの所属記録や、アンケートの対象グループ設定からも削除されます。`}
+                      />
+                    </div>
                   </th>
                 ))}
               </tr>

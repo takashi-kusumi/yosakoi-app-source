@@ -117,18 +117,24 @@ export default async function EventDetailPage({
           <form
             action={`/api/events/${detail.event.id}/guests`}
             method="POST"
-            className="flex gap-2"
+            className="space-y-2"
           >
             <input
               type="text"
               name="displayName"
               required
               placeholder="体験参加者の名前"
-              className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="メールアドレス（任意）"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
             />
             <button
               type="submit"
-              className="shrink-0 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white"
+              className="w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white"
             >
               追加
             </button>

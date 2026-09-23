@@ -10,12 +10,14 @@ export function GuestActions({
   eventId,
   memberId,
   displayName,
+  email,
   status,
 }: {
   eventId: string;
   memberId: string;
   displayName: string;
-  status: "ATTENDING" | "NOT_ATTENDING";
+  email: string | null;
+  status: "ATTENDING" | "NOT_ATTENDING" | "UNDECIDED";
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -40,6 +42,13 @@ export function GuestActions({
           name="displayName"
           defaultValue={displayName}
           required
+          className="w-full rounded border border-neutral-300 px-2 py-1 text-xs"
+        />
+        <input
+          type="email"
+          name="email"
+          defaultValue={email ?? ""}
+          placeholder="メールアドレス（任意）"
           className="w-full rounded border border-neutral-300 px-2 py-1 text-xs"
         />
         <select

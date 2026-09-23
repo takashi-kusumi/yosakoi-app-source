@@ -1,5 +1,6 @@
 import { getToolMatrix } from "@/lib/queries";
 import { FlashMessage } from "@/components/FlashMessage";
+import { RenameDeleteActions } from "@/components/RenameDeleteActions";
 
 export default async function AdminToolsPage({
   searchParams,
@@ -52,7 +53,16 @@ export default async function AdminToolsPage({
                 </th>
                 {items.map((item) => (
                   <th key={item.id} className="px-3 py-2 font-semibold text-neutral-600">
-                    {item.name}
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="truncate">{item.name}</span>
+                      <RenameDeleteActions
+                        actionPath="/api/admin/tools"
+                        idFieldName="toolItemId"
+                        id={item.id}
+                        name={item.name}
+                        deleteConfirmMessage={`「${item.name}」を削除しますか？全員の保有状況の記録も削除されます。`}
+                      />
+                    </div>
                   </th>
                 ))}
               </tr>

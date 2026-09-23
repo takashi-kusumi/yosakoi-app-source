@@ -6,6 +6,7 @@ import { getCurrentMember } from "@/lib/auth";
 import { getSurveyWithQuestions, getSurveyTargetMembers } from "@/lib/queries";
 import { newId } from "@/lib/id";
 import { redirectWithMessage } from "@/lib/formRedirect";
+import { isSurveyOpen } from "@/lib/labels";
 
 export async function POST(
   request: NextRequest,
@@ -21,7 +22,7 @@ export async function POST(
   if (!detail) {
     return redirectWithMessage(request, "/surveys", { error: "アンケートが見つかりません" });
   }
-  if (!detail.survey.isOpen) {
+  if (!isSurveyOpen(detail.survey)) {
     return redirectWithMessage(request, `/surveys/${surveyId}`, {
       error: "このアンケートは回答受付を終了しています",
     });

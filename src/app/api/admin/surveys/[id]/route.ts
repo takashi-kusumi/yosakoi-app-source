@@ -10,6 +10,7 @@ import {
   replaceSurveyQuestions,
   replaceSurveyTargetGroups,
 } from "@/lib/surveys";
+import { parseJstDatetimeLocal } from "@/lib/labels";
 
 export async function POST(
   request: NextRequest,
@@ -46,6 +47,7 @@ export async function POST(
   const targetMode = String(formData.get("targetMode") || "all");
   const groupIds = formData.getAll("groupIds").map((v) => String(v)).filter(Boolean);
   const questionsJson = String(formData.get("questionsJson") || "[]");
+  const closesAt = parseJstDatetimeLocal(String(formData.get("closesAt") || ""));
 
   if (!title) {
     return redirectWithMessage(request, `/admin/surveys/${surveyId}/edit`, { error: "タイトルは必須です" });
@@ -67,6 +69,7 @@ export async function POST(
       title,
       description: description || null,
       targetAll: targetMode !== "groups",
+      closesAt,
       updatedAt: new Date(),
     })
     .where(eq(surveys.id, surveyId));

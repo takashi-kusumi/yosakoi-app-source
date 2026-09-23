@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { redirectWithMessage } from "@/lib/formRedirect";
 import { parseQuestionsJson, replaceSurveyQuestions, replaceSurveyTargetGroups } from "@/lib/surveys";
+import { parseJstDatetimeLocal } from "@/lib/labels";
 
 export async function POST(request: NextRequest) {
   let member;
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
   const targetMode = String(formData.get("targetMode") || "all");
   const groupIds = formData.getAll("groupIds").map((v) => String(v)).filter(Boolean);
   const questionsJson = String(formData.get("questionsJson") || "[]");
+  const closesAt = parseJstDatetimeLocal(String(formData.get("closesAt") || ""));
 
   if (!title) {
     return redirectWithMessage(request, "/admin/surveys/new", { error: "タイトルは必須です" });
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
     description: description || null,
     createdBy: member.id,
     targetAll: targetMode !== "groups",
+    closesAt,
   });
 
   await replaceSurveyQuestions(surveyId, parsed.questions);

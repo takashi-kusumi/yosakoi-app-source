@@ -36,8 +36,8 @@ export default async function RegisterPage({
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
           {isRegular
-            ? "学年・パート・部員の種類・メールアドレスを編集できます。"
-            : "学年・パート・部員の種類・メールアドレスを入力すると、正部員として登録されます。メールアドレスは練習場所の入館証発行に使用します。"}
+            ? "部員の属性・パート・部員の種類・メールアドレスを編集できます。"
+            : "部員の属性・パート・部員の種類・メールアドレスを入力すると、正部員として登録されます。メールアドレスは練習場所の入館証発行に使用します。"}
         </p>
       </div>
 
@@ -47,12 +47,12 @@ export default async function RegisterPage({
         className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
       >
         <div>
-          <label className="mb-1 block text-xs font-semibold text-neutral-600">学年</label>
+          <label className="mb-1 block text-xs font-semibold text-neutral-600">部員の属性</label>
           <input
             type="text"
-            name="grade"
-            defaultValue={member.grade ?? ""}
-            placeholder="例: 大学2年"
+            name="attribute"
+            defaultValue={member.attribute ?? ""}
+            placeholder="例: 大学2年、社会人 など"
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
           />
         </div>

@@ -22,7 +22,9 @@ import {
   surveyAnswers,
   surveyAnswerOptions,
 } from "@/db/schema";
-import { eq, and, asc, desc, inArray, ne } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, ne, gt } from "drizzle-orm";
+import { jstTodayKey, jstDateKey } from "@/lib/calendar";
+import { isSurveyOpen } from "@/lib/labels";
 
 export async function getOpenEventsForMember(memberId: string) {
   return db
@@ -289,19 +291,21 @@ export async function getEventsWithCounts() {
     )
   );
 
-  // ゲストの回答は attending/notAttending/total（=未回答計算に使う分子）には含めず、
+  // ゲストの回答は attending/notAttending/undecided/total（=未回答計算に使う分子）には含めず、
   // 別枠の guestAttending としてカウントする
   const countMap = new Map<
     string,
-    { attending: number; notAttending: number; total: number; guestAttending: number }
+    { attending: number; notAttending: number; undecided: number; total: number; guestAttending: number }
   >();
   for (const r of allResponses) {
     const c =
-      countMap.get(r.eventId) ?? { attending: 0, notAttending: 0, total: 0, guestAttending: 0 };
+      countMap.get(r.eventId) ??
+      { attending: 0, notAttending: 0, undecided: 0, total: 0, guestAttending: 0 };
     if (guestIds.has(r.memberId)) {
       if (r.status === "ATTENDING") c.guestAttending++;
     } else {
       if (r.status === "ATTENDING") c.attending++;
+      else if (r.status === "UNDECIDED") c.undecided++;
       else c.notAttending++;
       c.total++;
     }
@@ -311,9 +315,44 @@ export async function getEventsWithCounts() {
   return allEvents.map((e) => ({
     event: e,
     counts:
-      countMap.get(e.id) ?? { attending: 0, notAttending: 0, total: 0, guestAttending: 0 },
+      countMap.get(e.id) ??
+      { attending: 0, notAttending: 0, undecided: 0, total: 0, guestAttending: 0 },
     activeMemberCount,
   }));
+}
+
+// ==================== ボトムナビのバッジ件数 ====================
+
+/** 本人向け：今後の募集中イベントのうち、まだ回答していない件数（ダッシュボードの計算と同じ条件） */
+export async function getPendingEventCountForMember(memberId: string): Promise<number> {
+  const rows = await getOpenEventsForMember(memberId);
+  const todayKey = jstTodayKey();
+  return rows.filter(
+    (row) =>
+      (!row.event.eventDate || jstDateKey(row.event.eventDate) >= todayKey) && !row.response
+  ).length;
+}
+
+/** 本人向け：対象になっている、実質的に回答受付中のアンケートのうち未回答の件数 */
+export async function getPendingSurveyCountForMember(memberId: string): Promise<number> {
+  const rows = await getSurveysForMember(memberId);
+  return rows.filter(({ survey, answered }) => !answered && isSurveyOpen(survey)).length;
+}
+
+/**
+ * 最後にお知らせ一覧を開いた日時（lastSeenNoticesAt）より後に作られたお知らせの件数。
+ * まだ一度も開いたことがない（null）場合は、これまでの全件を未読として数える。
+ */
+export async function getUnreadNoticeCount(lastSeenAt: Date | null): Promise<number> {
+  const rows = lastSeenAt
+    ? await db.select({ id: notices.id }).from(notices).where(gt(notices.createdAt, lastSeenAt))
+    : await db.select({ id: notices.id }).from(notices);
+  return rows.length;
+}
+
+/** お知らせ一覧を開いたタイミングで呼び、未読件数の基準日時を更新する */
+export async function markNoticesSeen(memberId: string) {
+  await db.update(members).set({ lastSeenNoticesAt: new Date() }).where(eq(members.id, memberId));
 }
 
 export async function getEventOptionsForNotice() {

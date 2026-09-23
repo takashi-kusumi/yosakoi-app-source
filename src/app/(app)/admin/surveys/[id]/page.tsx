@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSurveyResults } from "@/lib/queries";
-import { formatDateTime } from "@/lib/labels";
+import { formatDateTime, isSurveyOpen } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 
@@ -34,7 +34,10 @@ export default async function AdminSurveyDetailPage({
             {results.survey.description}
           </p>
         )}
-        <p className="mt-1 text-xs text-neutral-400">{formatDateTime(results.survey.createdAt)}</p>
+        <p className="mt-1 text-xs text-neutral-400">
+          {formatDateTime(results.survey.createdAt)}
+          {results.survey.closesAt && ` ・ 締切 ${formatDateTime(results.survey.closesAt)}`}
+        </p>
 
         <div className="mt-3 flex flex-wrap gap-2">
           <Link

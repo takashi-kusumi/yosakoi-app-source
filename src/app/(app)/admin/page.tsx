@@ -152,7 +152,8 @@ export default async function AdminPage({
                   </p>
                 )}
                 <p className="mt-2 text-xs text-neutral-500">
-                  参加 {counts.attending} ・ 不参加 {counts.notAttending} ・ 未回答{" "}
+                  参加 {counts.attending} ・ 不参加 {counts.notAttending}
+                  {counts.undecided > 0 && ` ・ 未定 ${counts.undecided}`} ・ 未回答{" "}
                   {activeMemberCount - counts.total}
                   {counts.guestAttending > 0 && ` ・ 体験参加 ${counts.guestAttending}`}
                 </p>

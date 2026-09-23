@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  const grade = String(formData.get("grade") || "").trim();
+  const attribute = String(formData.get("attribute") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const category = String(formData.get("category") || "");
   const groupIds = formData.getAll("groupIds").map((v) => String(v));
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   await db
     .update(members)
     .set({
-      grade: grade || null,
+      attribute: attribute || null,
       email,
       membershipStatus: "REGULAR",
       updatedAt: new Date(),

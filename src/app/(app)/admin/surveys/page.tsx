@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSurveysWithCounts } from "@/lib/queries";
-import { formatDateTime } from "@/lib/labels";
+import { formatDateTime, isSurveyOpen } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 
 export default async function AdminSurveysPage({
@@ -41,14 +41,17 @@ export default async function AdminSurveysPage({
                   <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700">
                     {survey.targetAll ? "全員対象" : "グループ対象"}
                   </span>
-                  {!survey.isOpen && (
+                  {!isSurveyOpen(survey) && (
                     <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-500">
                       締切
                     </span>
                   )}
                 </div>
                 <p className="font-semibold text-neutral-900">{survey.title}</p>
-                <p className="text-xs text-neutral-500">{formatDateTime(survey.createdAt)}</p>
+                <p className="text-xs text-neutral-500">
+                  {formatDateTime(survey.createdAt)}
+                  {survey.closesAt && ` ・ 締切 ${formatDateTime(survey.closesAt)}`}
+                </p>
                 <p className="mt-2 text-xs text-neutral-500">
                   回答 {responseCount}/{targetCount}
                 </p>

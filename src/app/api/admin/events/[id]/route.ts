@@ -87,10 +87,11 @@ export async function POST(
       ok: "参加費の状況を更新しました",
     });
   } else if (action === "updateGuest") {
-    // 体験参加者（ゲスト）の名前・このイベントでの参加状況を訂正する。
+    // 体験参加者（ゲスト）の名前・メールアドレス・このイベントでの参加状況を訂正する。
     // isGuest=false のメンバーはここでは一切変更できないようにガードする。
     const memberId = String(formData.get("memberId") || "");
     const displayName = String(formData.get("displayName") || "").trim();
+    const email = String(formData.get("email") || "").trim();
     const status = formData.get("status");
 
     const [guest] = await db.select().from(members).where(eq(members.id, memberId)).limit(1);
@@ -112,7 +113,7 @@ export async function POST(
 
     await db
       .update(members)
-      .set({ displayName, updatedAt: new Date() })
+      .set({ displayName, email: email || null, updatedAt: new Date() })
       .where(eq(members.id, memberId));
 
     await db
