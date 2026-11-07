@@ -5,6 +5,9 @@ import { deadlineLabel, formatDateTime, isSurveyOpen } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { BackLink, Card, secondaryButton } from "@/components/ui";
+import { ShareTextCard } from "@/components/ShareTextCard";
+import { surveyShareTemplates } from "@/lib/shareText";
+import { getAppUrl } from "@/lib/serverAppUrl";
 
 export default async function AdminSurveyDetailPage({
   params,
@@ -20,6 +23,10 @@ export default async function AdminSurveyDetailPage({
   if (!results) notFound();
   const open = isSurveyOpen(results.survey);
   const action = `/api/admin/surveys/${id}`;
+  const shareTemplates = surveyShareTemplates(results.survey, {
+    appUrl: await getAppUrl(),
+    unansweredNames: results.unansweredMembers.map((m) => m.displayName),
+  });
   const pct = results.targetCount > 0 ? Math.round((results.responseCount / results.targetCount) * 100) : 0;
 
   return (
@@ -69,6 +76,8 @@ export default async function AdminSurveyDetailPage({
           </Link>
         </div>
       </Card>
+
+      <ShareTextCard templates={shareTemplates} />
 
       {results.questionResults.map((qr, index) => (
         <Card key={qr.question.id}>

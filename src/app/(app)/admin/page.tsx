@@ -5,6 +5,9 @@ import { isCalendarSyncConfigured } from "@/lib/googleCalendar";
 import { FlashMessage } from "@/components/FlashMessage";
 import { EventCard } from "@/components/EventCard";
 import { PageTitle } from "@/components/ui";
+import { ShareTextCard } from "@/components/ShareTextCard";
+import { scheduleShareTemplate } from "@/lib/shareText";
+import { getAppUrl } from "@/lib/serverAppUrl";
 
 const tile = "flex flex-col gap-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-sm active:scale-[0.99]";
 
@@ -22,6 +25,10 @@ export default async function AdminPage({
   const upcoming = rows
     .filter((r) => !r.event.eventDate || jstDateKey(r.event.eventDate) >= todayKey)
     .sort((a, b) => (a.event.eventDate?.getTime() ?? Infinity) - (b.event.eventDate?.getTime() ?? Infinity));
+  const scheduleTemplates = scheduleShareTemplate(
+    upcoming.filter((r) => r.event.eventDate).slice(0, 15).map((r) => r.event),
+    { appUrl: await getAppUrl() }
+  );
   const pastRows = rows.filter((r) => r.event.eventDate && jstDateKey(r.event.eventDate) < todayKey);
 
   const renderRow = ({ event, counts, activeMemberCount }: (typeof rows)[number], muted = false) => (
@@ -92,6 +99,12 @@ export default async function AdminPage({
           </form>
         )}
       </section>
+
+      <ShareTextCard
+        title="これからの予定をLINEに貼る"
+        description="日時が決まっている今後の予定（最大15件）を一覧にします。"
+        templates={scheduleTemplates}
+      />
 
       <section className="space-y-2.5">
         <h2 className="text-sm font-bold text-neutral-700">これからの予定（{upcoming.length}件）</h2>

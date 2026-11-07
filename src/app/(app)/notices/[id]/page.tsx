@@ -7,6 +7,9 @@ import { ATTACHMENT_TYPE_ICON, formatFileSize } from "@/lib/notices";
 import { FlashMessage } from "@/components/FlashMessage";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { BackLink, Card, secondaryButton } from "@/components/ui";
+import { ShareTextCard } from "@/components/ShareTextCard";
+import { noticeShareTemplates } from "@/lib/shareText";
+import { getAppUrl } from "@/lib/serverAppUrl";
 
 export default async function NoticeDetailPage({
   params,
@@ -98,6 +101,10 @@ export default async function NoticeDetailPage({
           </ul>
         )}
       </Card>
+
+      {member.role === "ADMIN" && (
+        <ShareTextCard templates={noticeShareTemplates(detail.notice, { appUrl: await getAppUrl() })} />
+      )}
 
       {member.role === "ADMIN" && (
         <div className="grid grid-cols-2 gap-2">

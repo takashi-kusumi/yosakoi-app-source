@@ -7,6 +7,9 @@ import { FlashMessage } from "@/components/FlashMessage";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { TypeChip } from "@/components/EventCard";
 import { AttendanceList } from "@/components/AttendanceList";
+import { ShareTextCard } from "@/components/ShareTextCard";
+import { eventShareTemplates } from "@/lib/shareText";
+import { getAppUrl } from "@/lib/serverAppUrl";
 
 export default async function AdminEventDetailPage({
   params,
@@ -32,6 +35,12 @@ export default async function AdminEventDetailPage({
   );
   const paidCount = feeTargets.filter((a) => a.response.feePaid && a.response.status === "ATTENDING").length;
   const attendingCount = detail.answered.filter((a) => a.response.status === "ATTENDING").length;
+
+  const shareTemplates = eventShareTemplates(event, {
+    appUrl: await getAppUrl(),
+    unansweredNames: detail.unanswered.map((m) => m.displayName),
+    attendingNames: detail.answered.filter((a) => a.response.status === "ATTENDING").map((a) => a.member.displayName),
+  });
 
   const btn = "rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-center text-xs font-bold text-neutral-700 shadow-sm";
 
@@ -83,6 +92,11 @@ export default async function AdminEventDetailPage({
           </Link>
         </div>
       </section>
+
+      <ShareTextCard
+        description="「告知」「リマインド（未回答者の名前入り）」「参加者への案内」から選べます。"
+        templates={shareTemplates}
+      />
 
       {event.feeAmount != null && (
         <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
