@@ -7,6 +7,9 @@ import {
   STATUS_LABEL,
   UNANSWERED_BADGE_CLASS,
   eventDateBlock,
+  formatTimeRange,
+  isEventOpen,
+  deadlineLabel,
 } from "@/lib/labels";
 import { RespondForm } from "@/components/RespondForm";
 
@@ -15,8 +18,10 @@ export type EventCardData = {
   type: string;
   title: string;
   eventDate: Date | string | null;
+  endDate?: Date | string | null;
   location: string | null;
   isOpen: boolean;
+  responseDeadline?: Date | string | null;
 };
 
 export function TypeChip({ type }: { type: string }) {
@@ -68,12 +73,14 @@ export function EventCard({
   footer?: React.ReactNode;
 }) {
   const date = eventDateBlock(event.eventDate);
+  const open = isEventOpen(event);
+  const deadline = open && !status ? deadlineLabel(event.responseDeadline) : null;
   const link = href ?? `/events/${event.id}`;
 
   return (
     <div
       className={`group relative overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md active:scale-[0.99] ${
-        !status && event.isOpen && !rightSlot && !muted ? "border-amber-200" : "border-neutral-200"
+        !status && open && !rightSlot && !muted ? "border-amber-200" : "border-neutral-200"
       } ${muted ? "opacity-70" : ""}`}
     >
       <span
@@ -108,7 +115,7 @@ export function EventCard({
             <div className="min-w-0">
               <div className="mb-1 flex flex-wrap items-center gap-1.5">
                 <TypeChip type={event.type} />
-                {!event.isOpen && (
+                {!open && (
                   <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">
                     締切
                   </span>
@@ -119,9 +126,12 @@ export function EventCard({
             {rightSlot ?? <StatusBadge status={status} />}
           </div>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-neutral-500">
-            {date && <span>🕒 {date.time}〜</span>}
+            {date && <span>🕒 {formatTimeRange(event.eventDate, event.endDate)}</span>}
             {event.location && <span className="truncate">📍 {event.location}</span>}
           </p>
+          {deadline && (
+            <p className="mt-1 text-[11px] font-semibold text-amber-700">⏰ {deadline}</p>
+          )}
           {note && (
             <p className="mt-1 truncate text-xs text-neutral-500">
               <span className="text-neutral-400">メモ:</span> {note}
@@ -131,7 +141,7 @@ export function EventCard({
         </div>
       </div>
 
-      {quickRespond && event.isOpen && (
+      {quickRespond && open && (
         <div className="relative z-10 border-t border-neutral-100 px-3 pb-3 pl-4 pt-2.5">
           <RespondForm eventId={event.id} currentStatus={status as never} redirectTo={quickRespond.redirectTo} />
         </div>

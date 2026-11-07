@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { getEventsWithCounts } from "@/lib/queries";
 import { jstDateKey, jstTodayKey } from "@/lib/calendar";
+import { isCalendarSyncConfigured } from "@/lib/googleCalendar";
 import { FlashMessage } from "@/components/FlashMessage";
 import { EventCard } from "@/components/EventCard";
+import { PageTitle } from "@/components/ui";
+
+const tile = "flex flex-col gap-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-sm active:scale-[0.99]";
 
 export default async function AdminPage({
   searchParams,
@@ -13,12 +17,11 @@ export default async function AdminPage({
   const rows = await getEventsWithCounts();
   const todayKey = jstTodayKey();
   const showPast = past === "1";
+  const calendarOn = isCalendarSyncConfigured();
 
   const upcoming = rows
     .filter((r) => !r.event.eventDate || jstDateKey(r.event.eventDate) >= todayKey)
-    .sort(
-      (a, b) => (a.event.eventDate?.getTime() ?? Infinity) - (b.event.eventDate?.getTime() ?? Infinity)
-    );
+    .sort((a, b) => (a.event.eventDate?.getTime() ?? Infinity) - (b.event.eventDate?.getTime() ?? Infinity));
   const pastRows = rows.filter((r) => r.event.eventDate && jstDateKey(r.event.eventDate) < todayKey);
 
   const renderRow = ({ event, counts, activeMemberCount }: (typeof rows)[number], muted = false) => (
@@ -34,8 +37,7 @@ export default async function AdminPage({
       }
       footer={
         <p className="mt-1.5 text-[11px] text-neutral-400">
-          未定 {counts.undecided} ・ 不参加 {counts.notAttending} ・ 未回答{" "}
-          {Math.max(0, activeMemberCount - counts.total)}
+          未定 {counts.undecided} ・ 不参加 {counts.notAttending} ・ 未回答 {Math.max(0, activeMemberCount - counts.total)}
           {counts.guestAttending > 0 && ` ・ うち体験 ${counts.guestAttending}`}
         </p>
       }
@@ -45,33 +47,57 @@ export default async function AdminPage({
   return (
     <div className="space-y-5">
       <FlashMessage ok={ok} error={error} />
+      <PageTitle>管理</PageTitle>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight text-neutral-900">管理</h1>
-        <Link
-          href="/admin/events/new"
-          className="rounded-full bg-orange-600 px-4 py-2 text-sm font-bold text-white shadow-sm shadow-orange-600/20"
-        >
-          ＋ 予定を作成
+      <div className="grid grid-cols-2 gap-2.5">
+        <Link href="/admin/events/new" className={`${tile} border-orange-200 bg-orange-50`}>
+          <span className="text-lg">➕</span>
+          <span className="text-sm font-bold text-orange-800">予定を作成</span>
+        </Link>
+        <Link href="/admin/events/bulk" className={tile}>
+          <span className="text-lg">🔁</span>
+          <span className="text-sm font-bold text-neutral-800">毎週の予定を一括作成</span>
+        </Link>
+        <Link href="/admin/notices" className={tile}>
+          <span className="text-lg">📢</span>
+          <span className="text-sm font-bold text-neutral-800">お知らせ</span>
+        </Link>
+        <Link href="/admin/surveys" className={tile}>
+          <span className="text-lg">📋</span>
+          <span className="text-sm font-bold text-neutral-800">アンケート</span>
+        </Link>
+        <Link href="/admin/members" className={`${tile} col-span-2`}>
+          <span className="text-sm font-bold text-neutral-800">👥 メンバー管理</span>
+          <span className="text-[11px] text-neutral-400">管理者の設定・利用停止</span>
         </Link>
       </div>
 
-      <Link
-        href="/admin/members"
-        className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-sm"
-      >
-        <div>
-          <p className="text-sm font-bold text-neutral-800">メンバー管理</p>
-          <p className="text-xs text-neutral-400">管理者の設定・利用停止</p>
+      <section className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-neutral-800">Googleカレンダー連携</p>
+          <p className="text-[11px] text-neutral-400">
+            {calendarOn
+              ? "有効：予定の作成・変更・削除が自動で反映されます"
+              : "未設定（GOOGLE_CALENDAR_ID と GOOGLE_SERVICE_ACCOUNT_JSON を設定すると有効になります）"}
+          </p>
         </div>
-        <span className="text-neutral-300">›</span>
-      </Link>
+        {calendarOn && (
+          <form action="/api/admin/calendar-sync" method="POST">
+            <button
+              type="submit"
+              className="shrink-0 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-[11px] font-semibold text-neutral-600"
+            >
+              カレンダーに再反映
+            </button>
+          </form>
+        )}
+      </section>
 
       <section className="space-y-2.5">
         <h2 className="text-sm font-bold text-neutral-700">これからの予定（{upcoming.length}件）</h2>
         {upcoming.length === 0 && (
           <p className="rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-center text-sm text-neutral-400">
-            これからの予定はありません。「＋ 予定を作成」から追加してください。
+            これからの予定はありません
           </p>
         )}
         {upcoming.map((r) => renderRow(r))}

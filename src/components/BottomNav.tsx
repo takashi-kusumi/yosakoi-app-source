@@ -22,6 +22,22 @@ function CalendarIcon() {
     </svg>
   );
 }
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconClass} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8Z" />
+      <path strokeLinecap="round" d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+    </svg>
+  );
+}
+function ClipboardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconClass} aria-hidden>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path strokeLinecap="round" d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" />
+    </svg>
+  );
+}
 function GearIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconClass} aria-hidden>
@@ -35,12 +51,16 @@ function GearIcon() {
   );
 }
 
-export function BottomNav({ isAdmin, pendingEvents }: { isAdmin: boolean; pendingEvents: number }) {
+export type NavBadges = { events?: number; notices?: number; surveys?: number };
+
+export function BottomNav({ isAdmin, badges }: { isAdmin: boolean; badges: NavBadges }) {
   const pathname = usePathname();
 
   const items: NavItem[] = [
     { href: "/dashboard", label: "ホーム", icon: <HomeIcon /> },
-    { href: "/events", label: "予定", icon: <CalendarIcon />, badge: pendingEvents },
+    { href: "/events", label: "予定", icon: <CalendarIcon />, badge: badges.events },
+    { href: "/notices", label: "お知らせ", icon: <BellIcon />, badge: badges.notices },
+    { href: "/surveys", label: "アンケート", icon: <ClipboardIcon />, badge: badges.surveys },
   ];
   if (isAdmin) {
     items.push({ href: "/admin", label: "管理", icon: <GearIcon /> });
@@ -55,7 +75,7 @@ export function BottomNav({ isAdmin, pendingEvents }: { isAdmin: boolean; pendin
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
-                className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
+                className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold ${
                   active ? "text-orange-600" : "text-neutral-400"
                 }`}
               >

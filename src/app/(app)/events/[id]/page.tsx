@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentMember } from "@/lib/auth";
 import { getEventWithResponses, getEventPhotos } from "@/lib/queries";
-import { formatEventDate } from "@/lib/labels";
+import { formatEventDate, isEventOpen, deadlineLabel, formatDateTime } from "@/lib/labels";
 import { RespondForm } from "@/components/RespondForm";
 import { FlashMessage } from "@/components/FlashMessage";
 import { EventPhotoUpload } from "@/components/EventPhotoUpload";
@@ -27,6 +27,8 @@ export default async function EventDetailPage({
   const photos = await getEventPhotos(id);
 
   const { event } = detail;
+  const open = isEventOpen(event);
+  const deadline = open ? deadlineLabel(event.responseDeadline) : null;
   const isAdmin = member.role === "ADMIN";
   const myAnswer = detail.answered.find((a) => a.member.id === member.id);
   const selfPath = `/events/${event.id}`;
@@ -56,7 +58,7 @@ export default async function EventDetailPage({
       <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5">
           <TypeChip type={event.type} />
-          {!event.isOpen && (
+          {!open && (
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">
               受付終了
             </span>
@@ -67,7 +69,7 @@ export default async function EventDetailPage({
         <dl className="mt-3 space-y-1.5 text-sm">
           <div className="flex gap-2">
             <dt className="w-5 shrink-0 text-center" aria-label="日時">🗓</dt>
-            <dd className="font-semibold text-neutral-800">{formatEventDate(event.eventDate)}</dd>
+            <dd className="font-semibold text-neutral-800">{formatEventDate(event.eventDate, event.endDate)}</dd>
           </div>
           {event.location && (
             <div className="flex gap-2">
@@ -118,7 +120,10 @@ export default async function EventDetailPage({
           <h2 className="text-sm font-bold text-neutral-800">あなたの回答</h2>
           <StatusBadge status={myAnswer?.response.status} />
         </div>
-        {event.isOpen ? (
+        {deadline && (
+          <p className="-mt-1 mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">⏰ 回答{deadline}</p>
+        )}
+        {open ? (
           <RespondForm
             eventId={event.id}
             currentStatus={myAnswer?.response.status}
@@ -128,7 +133,8 @@ export default async function EventDetailPage({
           />
         ) : (
           <p className="text-sm text-neutral-500">
-            回答の受付は終了しました。
+            回答の受付は終了しました
+            {event.responseDeadline && `（締切 ${formatDateTime(event.responseDeadline)}）`}。
             {myAnswer?.response.note && <span className="mt-1 block">💬 {myAnswer.response.note}</span>}
           </p>
         )}
@@ -149,7 +155,7 @@ export default async function EventDetailPage({
         />
       </section>
 
-      {event.isOpen && (
+      {open && (
         <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-bold text-neutral-800">体験者を追加</h2>
           <p className="mt-1 text-xs text-neutral-400">

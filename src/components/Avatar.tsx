@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** メンバーのアイコン。Googleのプロフィール画像が無い・読み込めない場合は名前の頭文字を表示する */
 export function Avatar({
@@ -13,11 +13,18 @@ export function Avatar({
   size?: number;
 }) {
   const [failed, setFailed] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  // 画像の読み込み失敗が画面の準備完了より先に起きた場合も、頭文字の表示に切り替える
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) setFailed(true);
+  }, []);
   const style = { width: size, height: size };
   if (pictureUrl && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
+        ref={imgRef}
         src={pictureUrl}
         alt=""
         style={style}

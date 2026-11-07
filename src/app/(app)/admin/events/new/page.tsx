@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { events } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { toTimeInputValue } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { EventForm } from "@/components/EventForm";
 
@@ -18,6 +19,7 @@ export default async function NewEventPage({
         location?: string;
         description?: string;
         feeAmount?: number | null;
+        endTime?: string;
       }
     | undefined;
   if (from) {
@@ -29,6 +31,7 @@ export default async function NewEventPage({
         location: source.location ?? "",
         description: source.description ?? "",
         feeAmount: source.feeAmount,
+        endTime: toTimeInputValue(source.endDate),
       };
     }
   }

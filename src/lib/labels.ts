@@ -59,11 +59,43 @@ function jstParts(d: Date) {
   };
 }
 
-/** 「11/15(土) 18:00」のような短い表記。カードや一覧向け */
-export function formatEventDate(date: Date | string | null): string {
+/** 「18:30」のようなJSTの時刻 */
+export function formatTime(date: Date | string | null): string {
+  if (!date) return "";
+  return jstParts(typeof date === "string" ? new Date(date) : date).time;
+}
+
+/** 「18:30〜21:00」または終了時刻が無い場合は「18:30〜」 */
+export function formatTimeRange(start: Date | string | null, end?: Date | string | null): string {
+  if (!start) return "";
+  return `${formatTime(start)}〜${end ? formatTime(end) : ""}`;
+}
+
+/** 「11/15(土) 18:00〜21:00」のような短い表記。カードや詳細向け */
+export function formatEventDate(date: Date | string | null, end?: Date | string | null): string {
   if (!date) return "日時未定";
   const p = jstParts(typeof date === "string" ? new Date(date) : date);
-  return `${p.month}/${p.day}(${p.weekday}) ${p.time}`;
+  return `${p.month}/${p.day}(${p.weekday}) ${formatTimeRange(date, end)}`;
+}
+
+/** <input type="time"> の value 用に、JSTの "HH:mm" を返す */
+export function toTimeInputValue(date: Date | string | null): string {
+  return date ? formatTime(date) : "";
+}
+
+/**
+ * 終了時刻（"HH:mm"）を、開始日時と同じ日（JST）の日時に変換する。
+ * 開始時刻以前の時刻が入力された場合は、日付をまたいだもの（翌日）として扱う。
+ * 開始日時が無い・形式が不正な場合は null。
+ */
+export function resolveEndDate(start: Date | null, endTime: string): Date | null {
+  const t = endTime.trim();
+  if (!start || !/^\d{2}:\d{2}$/.test(t)) return null;
+  const startLocal = toDatetimeLocalValue(start); // "YYYY-MM-DDTHH:mm"（JST）
+  const end = new Date(`${startLocal.slice(0, 10)}T${t}:00+09:00`);
+  if (Number.isNaN(end.getTime())) return null;
+  if (end.getTime() <= start.getTime()) end.setTime(end.getTime() + 24 * 60 * 60 * 1000);
+  return end;
 }
 
 /** カードの左側に置く日付ブロック用（月・日・曜日・時刻を別々に返す） */
@@ -127,3 +159,59 @@ export function parseJstDatetimeLocal(value: string): Date | null {
   const date = new Date(`${trimmed}:00+09:00`);
   return Number.isNaN(date.getTime()) ? null : date;
 }
+
+// ==================== 回答の受付・締切 ====================
+
+/**
+ * 予定が実際に回答受付中かどうか。isOpen=true でも、回答締切（responseDeadline）を
+ * 過ぎていれば締め切り扱いにする（管理者が手動で締め切るのを待たない）。
+ */
+export function isEventOpen(event: {
+  isOpen: boolean;
+  responseDeadline?: Date | string | null;
+}): boolean {
+  if (!event.isOpen) return false;
+  if (event.responseDeadline && new Date(event.responseDeadline).getTime() <= Date.now()) return false;
+  return true;
+}
+
+/**
+ * アンケートが実際に回答受付中かどうか（isOpen && 締切前）。
+ */
+export function isSurveyOpen(survey: { isOpen: boolean; closesAt: Date | string | null }): boolean {
+  if (!survey.isOpen) return false;
+  if (survey.closesAt && new Date(survey.closesAt).getTime() <= Date.now()) return false;
+  return true;
+}
+
+/** 締切までの残り時間を「あと3日」「今日 21:00まで」「あと2時間」のように表す（過ぎていればnull） */
+export function deadlineLabel(deadline: Date | string | null | undefined): string | null {
+  if (!deadline) return null;
+  const d = typeof deadline === "string" ? new Date(deadline) : deadline;
+  const diff = d.getTime() - Date.now();
+  if (diff <= 0) return null;
+  const hours = diff / (60 * 60 * 1000);
+  if (hours < 1) return "まもなく締切";
+  if (hours < 24) {
+    return `締切 ${formatTime(d)}（あと${Math.floor(hours)}時間）`;
+  }
+  const p = jstParts(d);
+  return `締切 ${p.month}/${p.day}(${p.weekday}) ${p.time}（あと${Math.floor(hours / 24)}日）`;
+}
+
+// ==================== アンケート ====================
+
+export const SURVEY_QUESTION_TYPE_LABELS: Record<string, string> = {
+  TEXT: "自由記述",
+  SINGLE: "単一選択",
+  MULTI: "複数選択",
+};
+
+export const SURVEY_QUESTION_TYPE_OPTIONS = [
+  { value: "TEXT", label: "自由記述" },
+  { value: "SINGLE", label: "単一選択（1つだけ選ぶ）" },
+  { value: "MULTI", label: "複数選択（複数選べる）" },
+] as const;
+
+export const VALID_SURVEY_QUESTION_TYPES = ["TEXT", "SINGLE", "MULTI"] as const;
+export type SurveyQuestionType = (typeof VALID_SURVEY_QUESTION_TYPES)[number];

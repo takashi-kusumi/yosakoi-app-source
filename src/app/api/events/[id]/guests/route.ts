@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { getCurrentMember } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { redirectWithMessage, safeRedirectTarget } from "@/lib/formRedirect";
-import { MAX_RESPONSE_NOTE_LENGTH } from "@/lib/labels";
+import { MAX_RESPONSE_NOTE_LENGTH, isEventOpen } from "@/lib/labels";
 
 /**
  * 体験参加者（ゲスト）の追加・訂正・削除。
@@ -32,7 +32,7 @@ export async function POST(
   }
 
   if (action === "add") {
-    if (!event.isOpen) {
+    if (!isEventOpen(event)) {
       return redirectWithMessage(request, back, { error: "この予定は回答受付を締め切っています" });
     }
     const displayName = String(formData.get("displayName") || "").trim().slice(0, 50);

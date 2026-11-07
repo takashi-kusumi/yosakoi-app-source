@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { events } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { toDatetimeLocalValue } from "@/lib/labels";
+import { toDatetimeLocalValue, toTimeInputValue } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { EventForm } from "@/components/EventForm";
 
@@ -32,6 +32,8 @@ export default async function EditEventPage({
           type: event.type,
           title: event.title,
           eventDateLocal: toDatetimeLocalValue(event.eventDate),
+          endTime: toTimeInputValue(event.endDate),
+          responseDeadlineLocal: toDatetimeLocalValue(event.responseDeadline),
           location: event.location ?? "",
           description: event.description ?? "",
           feeAmount: event.feeAmount,

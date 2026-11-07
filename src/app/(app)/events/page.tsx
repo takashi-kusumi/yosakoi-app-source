@@ -79,7 +79,10 @@ export default async function EventsPage({
     <div className="space-y-4">
       <FlashMessage ok={ok} error={error} />
 
-      <h1 className="text-xl font-bold tracking-tight text-neutral-900">予定</h1>
+      <div>
+        <h1 className="text-xl font-bold tracking-tight text-neutral-900">予定</h1>
+        <p className="mt-0.5 text-xs text-neutral-400">チームの予定をすべて見られます（過去の予定も含む）</p>
+      </div>
 
       <div className="flex rounded-xl bg-neutral-200/60 p-1">
         <Link href={eventsHref({ view: "calendar", month: currentMonth, type: typeFilter })} className={tab(isCalendar)}>

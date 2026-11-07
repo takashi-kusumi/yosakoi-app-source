@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentMember } from "@/lib/auth";
 import { getEventWithResponses } from "@/lib/queries";
-import { formatEventDate } from "@/lib/labels";
+import { formatEventDate, isEventOpen, formatDateTime } from "@/lib/labels";
 import { FlashMessage } from "@/components/FlashMessage";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { TypeChip } from "@/components/EventCard";
@@ -23,6 +23,7 @@ export default async function AdminEventDetailPage({
   const detail = await getEventWithResponses(id);
   if (!detail) notFound();
   const { event } = detail;
+  const open = isEventOpen(event);
   const selfPath = `/admin/events/${event.id}`;
   const action = `/api/admin/events/${event.id}`;
 
@@ -47,15 +48,18 @@ export default async function AdminEventDetailPage({
           <TypeChip type={event.type} />
           <span
             className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-              event.isOpen ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-500"
+              open ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-500"
             }`}
           >
-            {event.isOpen ? "受付中" : "受付終了"}
+            {open ? "受付中" : event.isOpen ? "締切済み" : "受付終了"}
           </span>
         </div>
         <h1 className="mt-2 text-xl font-bold tracking-tight text-neutral-900">{event.title}</h1>
-        <p className="mt-1 text-sm text-neutral-600">🗓 {formatEventDate(event.eventDate)}</p>
+        <p className="mt-1 text-sm text-neutral-600">🗓 {formatEventDate(event.eventDate, event.endDate)}</p>
         {event.location && <p className="text-sm text-neutral-600">📍 {event.location}</p>}
+        {event.responseDeadline && (
+          <p className="text-sm text-neutral-600">⏰ 回答締切 {formatDateTime(event.responseDeadline)}</p>
+        )}
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link href={`/admin/events/${event.id}/edit`} className={btn}>

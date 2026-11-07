@@ -12,6 +12,8 @@ export function EventForm({
     type?: string;
     title?: string;
     eventDateLocal?: string;
+    endTime?: string;
+    responseDeadlineLocal?: string;
     location?: string;
     description?: string;
     feeAmount?: number | null;
@@ -56,15 +58,29 @@ export function EventForm({
         />
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-semibold text-neutral-600">日時</label>
-        <input
-          type="datetime-local"
-          name="eventDate"
-          defaultValue={defaultValues?.eventDateLocal ?? ""}
-          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
-        />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-neutral-600">開始日時</label>
+          <input
+            type="datetime-local"
+            name="eventDate"
+            defaultValue={defaultValues?.eventDateLocal ?? ""}
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-neutral-600">終了時刻（任意）</label>
+          <input
+            type="time"
+            name="endTime"
+            defaultValue={defaultValues?.endTime ?? ""}
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm sm:w-36 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          />
+        </div>
       </div>
+      <p className="-mt-2 text-[11px] text-neutral-400">
+        終了時刻は開始日と同じ日の時刻です（開始より前の時刻を入れると、翌日の時刻として扱います）。
+      </p>
 
       <div>
         <label className="mb-1 block text-xs font-semibold text-neutral-600">
@@ -90,6 +106,19 @@ export function EventForm({
           placeholder="持ち物・注意事項などの補足"
           className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
         />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-neutral-600">回答締切（任意）</label>
+        <input
+          type="datetime-local"
+          name="responseDeadline"
+          defaultValue={defaultValues?.responseDeadlineLocal ?? ""}
+          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+        />
+        <p className="mt-1 text-[11px] text-neutral-400">
+          設定すると、この日時を過ぎたら自動で回答を受け付けなくなります。ホームには「締切まであと○日」と表示されます。
+        </p>
       </div>
 
       <div>

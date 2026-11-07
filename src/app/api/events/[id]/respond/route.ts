@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { getCurrentMember } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { redirectWithMessage, safeRedirectTarget } from "@/lib/formRedirect";
-import { MAX_RESPONSE_NOTE_LENGTH } from "@/lib/labels";
+import { MAX_RESPONSE_NOTE_LENGTH, isEventOpen } from "@/lib/labels";
 
 export async function POST(
   request: NextRequest,
@@ -33,7 +33,7 @@ export async function POST(
   if (!event) {
     return redirectWithMessage(request, "/events", { error: "予定が見つかりません" });
   }
-  if (!event.isOpen) {
+  if (!isEventOpen(event)) {
     return redirectWithMessage(request, redirectTo, { error: "この予定は回答受付を締め切っています" });
   }
 

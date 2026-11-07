@@ -2,10 +2,13 @@ import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { events, responses, eventPhotos } from "@/db/schema";
 import { deleteObject } from "@/lib/storage";
+import { resolveAppUrl } from "@/lib/appUrl";
+import { syncEventById } from "@/lib/eventSync";
+import { CALENDAR_ERROR_NOTE, removeEventFromCalendar } from "@/lib/googleCalendar";
 import { and, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth";
 import { redirectWithMessage, safeRedirectTarget } from "@/lib/formRedirect";
-import { VALID_EVENT_TYPES as VALID_TYPES, parseJstDatetimeLocal } from "@/lib/labels";
+import { VALID_EVENT_TYPES as VALID_TYPES, parseJstDatetimeLocal, resolveEndDate } from "@/lib/labels";
 
 export async function POST(
   request: NextRequest,
@@ -57,6 +60,8 @@ export async function POST(
     }
 
     const eventDate = parseJstDatetimeLocal(eventDateRaw);
+    const endDate = resolveEndDate(eventDate, String(formData.get("endTime") || ""));
+    const responseDeadline = parseJstDatetimeLocal(String(formData.get("responseDeadline") || ""));
 
     await db
       .update(events)
@@ -64,6 +69,8 @@ export async function POST(
         type: type as (typeof VALID_TYPES)[number],
         title,
         eventDate,
+        endDate,
+        responseDeadline,
         location: location || null,
         description: description || null,
         feeAmount,
@@ -71,7 +78,10 @@ export async function POST(
       })
       .where(eq(events.id, eventId));
 
-    return redirectWithMessage(request, `/admin/events/${eventId}`, { ok: "更新しました" });
+    const sync = await syncEventById(eventId, resolveAppUrl(request.nextUrl.origin));
+    return redirectWithMessage(request, `/admin/events/${eventId}`, {
+      ok: `更新しました${sync.status === "error" ? CALENDAR_ERROR_NOTE : ""}`,
+    });
   } else if (action === "toggleFeePaid") {
     const memberId = String(formData.get("memberId") || "");
     const [existing] = await db
@@ -91,6 +101,11 @@ export async function POST(
     });
   } else if (action === "delete") {
     // 出欠の回答・写真の記録もカスケード削除される。写真ファイル本体はストレージからも消す
+    const [target] = await db
+      .select({ googleCalendarEventId: events.googleCalendarEventId })
+      .from(events)
+      .where(eq(events.id, eventId))
+      .limit(1);
     const photos = await db
       .select({ objectKey: eventPhotos.objectKey })
       .from(eventPhotos)
@@ -103,7 +118,10 @@ export async function POST(
         console.error("deleteObject failed", err);
       }
     }
-    return redirectWithMessage(request, "/admin", { ok: "予定を削除しました" });
+    const removed = await removeEventFromCalendar(target?.googleCalendarEventId ?? null);
+    return redirectWithMessage(request, "/admin", {
+      ok: `予定を削除しました${removed.status === "error" ? "（Googleカレンダーからの削除に失敗しました。カレンダー側で削除してください）" : ""}`,
+    });
   }
 
   return redirectWithMessage(request, redirectTo);
