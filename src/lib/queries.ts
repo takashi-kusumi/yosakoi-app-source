@@ -21,8 +21,12 @@ import {
   surveyResponses,
   surveyAnswers,
   surveyAnswerOptions,
+  costumes,
+  costumeLoans,
+  costumeLoanPhotos,
 } from "@/db/schema";
-import { eq, and, asc, desc, inArray, ne, gt } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, ne, gt, isNull, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { jstTodayKey, jstDateKey } from "@/lib/calendar";
 import { isSurveyOpen } from "@/lib/labels";
 
@@ -709,4 +713,104 @@ export async function getSurveyResults(surveyId: string) {
     unansweredMembers,
     questionResults,
   };
+}
+
+
+// ==================== 衣装台帳・衣装の貸し借り ====================
+
+/** 貸し借りの当事者に選べるメンバー（現役の正部員・体験の部員。体験参加のゲストは除く） */
+export async function getLoanMemberOptions() {
+  return db
+    .select({ id: members.id, displayName: members.displayName })
+    .from(members)
+    .where(and(eq(members.isActive, true), eq(members.isGuest, false)))
+    .orderBy(asc(members.createdAt));
+}
+
+/** 衣装台帳。各衣装について、現在貸出中の記録（あれば）も合わせて返す */
+export async function getCostumeLedger() {
+  const owner = alias(members, "owner");
+  const borrower = alias(members, "borrower");
+  const rows = await db
+    .select({
+      costume: costumes,
+      ownerName: owner.displayName,
+    })
+    .from(costumes)
+    .leftJoin(owner, eq(owner.id, costumes.ownerId))
+    .orderBy(desc(costumes.createdAt));
+
+  const active = await db
+    .select({
+      loanId: costumeLoans.id,
+      costumeId: costumeLoans.costumeId,
+      borrowerName: borrower.displayName,
+      dueOn: costumeLoans.dueOn,
+    })
+    .from(costumeLoans)
+    .innerJoin(borrower, eq(borrower.id, costumeLoans.borrowerId))
+    .where(isNull(costumeLoans.returnedAt));
+
+  const activeByCostume = new Map<string, typeof active>();
+  for (const a of active) {
+    const list = activeByCostume.get(a.costumeId) ?? [];
+    list.push(a);
+    activeByCostume.set(a.costumeId, list);
+  }
+  return rows.map((r) => ({ ...r, activeLoans: activeByCostume.get(r.costume.id) ?? [] }));
+}
+
+/** 貸し借りの記録一覧（新しい順）。貸出中・返却済みの両方 */
+export async function getCostumeLoans() {
+  const lender = alias(members, "lender");
+  const borrower = alias(members, "borrower");
+  return db
+    .select({
+      loan: costumeLoans,
+      costumeName: costumes.name,
+      costumeSize: costumes.size,
+      lenderName: lender.displayName,
+      borrowerName: borrower.displayName,
+      photoCount: sql<number>`(select count(*)::int from ${costumeLoanPhotos} where ${costumeLoanPhotos.loanId} = ${costumeLoans.id})`,
+    })
+    .from(costumeLoans)
+    .innerJoin(costumes, eq(costumes.id, costumeLoans.costumeId))
+    .innerJoin(lender, eq(lender.id, costumeLoans.lenderId))
+    .innerJoin(borrower, eq(borrower.id, costumeLoans.borrowerId))
+    .orderBy(desc(costumeLoans.lentOn), desc(costumeLoans.createdAt));
+}
+
+/** 貸し借り1件の詳細。写真は本体（Base64）を含めず、一覧表示に必要な情報だけ返す */
+export async function getCostumeLoanDetail(loanId: string) {
+  const lender = alias(members, "lender");
+  const borrower = alias(members, "borrower");
+  const [row] = await db
+    .select({
+      loan: costumeLoans,
+      costumeName: costumes.name,
+      costumeSize: costumes.size,
+      costumeTheme: costumes.theme,
+      lenderName: lender.displayName,
+      borrowerName: borrower.displayName,
+    })
+    .from(costumeLoans)
+    .innerJoin(costumes, eq(costumes.id, costumeLoans.costumeId))
+    .innerJoin(lender, eq(lender.id, costumeLoans.lenderId))
+    .innerJoin(borrower, eq(borrower.id, costumeLoans.borrowerId))
+    .where(eq(costumeLoans.id, loanId))
+    .limit(1);
+  if (!row) return null;
+
+  const photos = await db
+    .select({
+      id: costumeLoanPhotos.id,
+      fileName: costumeLoanPhotos.fileName,
+      mimeType: costumeLoanPhotos.mimeType,
+      fileSize: costumeLoanPhotos.fileSize,
+    })
+    .from(costumeLoanPhotos)
+    .where(eq(costumeLoanPhotos.loanId, loanId))
+    .orderBy(asc(costumeLoanPhotos.createdAt));
+
+  return { ...row, photos };
 }

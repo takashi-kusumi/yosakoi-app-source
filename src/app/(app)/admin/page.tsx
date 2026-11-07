@@ -50,6 +50,15 @@ export default async function AdminPage({
           <p className="mt-1 text-xs text-neutral-400">道具の項目・保有状況一覧</p>
         </Link>
         <Link
+          href="/admin/costumes"
+          className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
+        >
+          <p className="font-semibold text-neutral-800">衣装管理</p>
+          <p className="mt-1 text-xs text-neutral-400">
+            衣装の台帳と、メンバー間の貸し借り（貸出中・返却済み）の記録
+          </p>
+        </Link>
+        <Link
           href="/admin/notices"
           className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
         >

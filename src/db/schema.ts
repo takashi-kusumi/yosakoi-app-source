@@ -7,6 +7,7 @@ import {
   pgEnum,
   uniqueIndex,
   index,
+  date,
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["ADMIN", "MEMBER"]);
@@ -290,6 +291,75 @@ export const memberCategories = pgTable(
     uniqueIndex("member_category_member_theme_unique").on(table.memberId, table.theme),
     index("member_categories_theme_idx").on(table.theme),
   ]
+);
+
+// ==================== 衣装台帳・衣装の貸し借り（メンバー間。管理者が記録する） ====================
+
+export const costumes = pgTable(
+  "costumes",
+  {
+    id: text("id").primaryKey(),
+    // 衣装名（例: 法被（赤）、帯、足袋）。同じ名前でもサイズ違いなどで複数登録できる。
+    name: text("name").notNull(),
+    // 演舞テーマ名（例: "ギャルマインド"）。performanceThemes.nameと同じ文字列を使う（緩い結合）。
+    // 任意。テーマに紐づかない衣装はnull。
+    theme: text("theme"),
+    size: text("size"),
+    // 持ち主（部員個人の所有物の場合）。部で保管している共用の衣装はnull。
+    ownerId: text("owner_id").references(() => members.id, { onDelete: "set null" }),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("costumes_theme_idx").on(table.theme)]
+);
+
+export const costumeLoans = pgTable(
+  "costume_loans",
+  {
+    id: text("id").primaryKey(),
+    costumeId: text("costume_id")
+      .notNull()
+      .references(() => costumes.id, { onDelete: "cascade" }),
+    lenderId: text("lender_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    borrowerId: text("borrower_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    // 貸した日・返却予定日はJSTの日付（YYYY-MM-DD）。時刻は持たない。
+    lentOn: date("lent_on", { mode: "string" }).notNull(),
+    dueOn: date("due_on", { mode: "string" }),
+    // 返却済みになった日時。nullなら貸出中。
+    returnedAt: timestamp("returned_at", { withTimezone: true }),
+    note: text("note"),
+    createdBy: text("created_by").references(() => members.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("costume_loans_costume_idx").on(table.costumeId),
+    index("costume_loans_lender_idx").on(table.lenderId),
+    index("costume_loans_borrower_idx").on(table.borrowerId),
+    index("costume_loans_returned_at_idx").on(table.returnedAt),
+  ]
+);
+
+export const costumeLoanPhotos = pgTable(
+  "costume_loan_photos",
+  {
+    id: text("id").primaryKey(),
+    loanId: text("loan_id")
+      .notNull()
+      .references(() => costumeLoans.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    fileSize: integer("file_size").notNull(),
+    // お知らせの添付ファイルと同様、Base64文字列としてDBに保存（別のストレージ契約を不要にするため）
+    dataBase64: text("data_base64").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("costume_loan_photos_loan_idx").on(table.loanId)]
 );
 
 // ==================== アンケート（Googleフォームのような自由設問アンケート） ====================
