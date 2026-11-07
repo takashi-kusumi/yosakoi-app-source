@@ -30,13 +30,12 @@ export async function proxy(request: NextRequest) {
   const session = await readSession(request);
 
   if (!session) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   if (pathname.startsWith("/admin") && session.role !== "ADMIN") {
     const dashboardUrl = new URL("/dashboard", request.url);
-    dashboardUrl.searchParams.set("error", "admin_only");
+    dashboardUrl.searchParams.set("error", "管理者のみ利用できます");
     return NextResponse.redirect(dashboardUrl);
   }
 
@@ -44,5 +43,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/events/:path*", "/tools/:path*", "/notices/:path*", "/surveys/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/events/:path*", "/admin/:path*"],
 };

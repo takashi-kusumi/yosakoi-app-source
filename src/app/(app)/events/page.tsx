@@ -1,22 +1,15 @@
 import Link from "next/link";
 import { getCurrentMember } from "@/lib/auth";
 import { getAllEventsForMember } from "@/lib/queries";
-import {
-  EVENT_TYPE_LABELS,
-  EVENT_TYPE_OPTIONS,
-  VALID_EVENT_TYPES,
-  STATUS_BADGE_CLASS,
-  STATUS_LABEL,
-  UNANSWERED_BADGE_CLASS,
-  formatDateTime,
-} from "@/lib/labels";
+import { EVENT_TYPE_OPTIONS, VALID_EVENT_TYPES } from "@/lib/labels";
 import { parseMonthParam, monthParam, jstTodayKey, jstDateKey } from "@/lib/calendar";
 import { FlashMessage } from "@/components/FlashMessage";
-import { CalendarView } from "@/components/CalendarView";
+import { MonthCalendar } from "@/components/CalendarView";
+import { EventCard } from "@/components/EventCard";
 
 function eventsHref(params: { view?: string; month?: string; type?: string; past?: boolean }) {
   const qs = new URLSearchParams();
-  if (params.view) qs.set("view", params.view);
+  if (params.view && params.view !== "calendar") qs.set("view", params.view);
   if (params.month) qs.set("month", params.month);
   if (params.type) qs.set("type", params.type);
   if (params.past) qs.set("past", "1");
@@ -27,7 +20,14 @@ function eventsHref(params: { view?: string; month?: string; type?: string; past
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; error?: string; view?: string; month?: string; type?: string; past?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    error?: string;
+    view?: string;
+    month?: string;
+    type?: string;
+    past?: string;
+  }>;
 }) {
   const { ok, error, view, month, type, past } = await searchParams;
   const member = await getCurrentMember();
@@ -37,70 +37,75 @@ export default async function EventsPage({
   const isCalendar = view !== "list";
   const { y, m } = parseMonthParam(month);
   const showPast = past === "1";
+  const currentMonth = monthParam(y, m);
 
   const typeFilter = VALID_EVENT_TYPES.includes(type as (typeof VALID_EVENT_TYPES)[number])
     ? (type as (typeof VALID_EVENT_TYPES)[number])
     : undefined;
   const rows = typeFilter ? allRows.filter((r) => r.event.type === typeFilter) : allRows;
 
-  const currentView = isCalendar ? "calendar" : "list";
-  const currentMonth = monthParam(y, m);
+  const byDate = (a: (typeof rows)[number], b: (typeof rows)[number]) =>
+    (a.event.eventDate?.getTime() ?? Infinity) - (b.event.eventDate?.getTime() ?? Infinity);
 
   const todayKey = jstTodayKey();
-  // 日時未定(eventDateがnull)のイベントは「過去」に埋もれさせず、常に今後の一覧側に出す
   const upcomingRows = rows
     .filter((r) => !r.event.eventDate || jstDateKey(r.event.eventDate) >= todayKey)
-    .sort((a, b) => (a.event.eventDate?.getTime() ?? Infinity) - (b.event.eventDate?.getTime() ?? Infinity));
+    .sort(byDate);
   const pastRows = rows
     .filter((r) => r.event.eventDate && jstDateKey(r.event.eventDate) < todayKey)
-    .sort((a, b) => (b.event.eventDate?.getTime() ?? 0) - (a.event.eventDate?.getTime() ?? 0));
+    .sort((a, b) => byDate(b, a));
+  const monthRows = rows
+    .filter((r) => r.event.eventDate && jstDateKey(r.event.eventDate).startsWith(currentMonth))
+    .sort(byDate);
+  const undatedRows = rows.filter((r) => !r.event.eventDate);
+
+  // カレンダーの日付から飛んできたときの移動先（その日の最初の予定にだけidを振る）
+  const firstIdByDay = new Map<string, string>();
+  for (const r of monthRows) {
+    const key = jstDateKey(r.event.eventDate!);
+    if (!firstIdByDay.has(key)) firstIdByDay.set(key, r.event.id);
+  }
+
+  const tab = (active: boolean) =>
+    `flex-1 rounded-lg py-2 text-center text-sm font-bold transition ${
+      active ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
+    }`;
+  const chip = (active: boolean) =>
+    `shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold ${
+      active ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white text-neutral-500"
+    }`;
 
   return (
     <div className="space-y-4">
       <FlashMessage ok={ok} error={error} />
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-neutral-900">イベント一覧</h1>
-        <div className="flex rounded-lg border border-neutral-200 bg-white p-0.5 text-xs">
-          <Link
-            href={eventsHref({ view: "calendar", month: currentMonth, type: typeFilter })}
-            className={`rounded-md px-3 py-1.5 font-semibold ${
-              isCalendar ? "bg-orange-600 text-white" : "text-neutral-500"
-            }`}
-          >
-            カレンダー
-          </Link>
-          <Link
-            href={eventsHref({ view: "list", type: typeFilter })}
-            className={`rounded-md px-3 py-1.5 font-semibold ${
-              !isCalendar ? "bg-orange-600 text-white" : "text-neutral-500"
-            }`}
-          >
-            リスト
-          </Link>
-        </div>
+      <h1 className="text-xl font-bold tracking-tight text-neutral-900">予定</h1>
+
+      <div className="flex rounded-xl bg-neutral-200/60 p-1">
+        <Link href={eventsHref({ view: "calendar", month: currentMonth, type: typeFilter })} className={tab(isCalendar)}>
+          カレンダー
+        </Link>
+        <Link href={eventsHref({ view: "list", type: typeFilter })} className={tab(!isCalendar)}>
+          リスト
+        </Link>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-0.5 text-xs">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5">
         <Link
-          href={eventsHref({ view: currentView, month: currentMonth })}
-          className={`shrink-0 rounded-full border px-3 py-1.5 font-semibold ${
-            !typeFilter
-              ? "border-orange-600 bg-orange-600 text-white"
-              : "border-neutral-200 bg-white text-neutral-500"
-          }`}
+          href={eventsHref({ view: isCalendar ? "calendar" : "list", month: isCalendar ? currentMonth : undefined })}
+          className={chip(!typeFilter)}
         >
           すべて
         </Link>
         {EVENT_TYPE_OPTIONS.map((opt) => (
           <Link
             key={opt.value}
-            href={eventsHref({ view: currentView, month: currentMonth, type: opt.value })}
-            className={`shrink-0 rounded-full border px-3 py-1.5 font-semibold ${
-              typeFilter === opt.value
-                ? "border-orange-600 bg-orange-600 text-white"
-                : "border-neutral-200 bg-white text-neutral-500"
-            }`}
+            href={eventsHref({
+              view: isCalendar ? "calendar" : "list",
+              month: isCalendar ? currentMonth : undefined,
+              type: opt.value,
+            })}
+            className={chip(typeFilter === opt.value)}
           >
             {opt.label}
           </Link>
@@ -108,91 +113,79 @@ export default async function EventsPage({
       </div>
 
       {isCalendar ? (
-        <CalendarView year={y} month={m} rows={rows} />
+        <>
+          <MonthCalendar
+            year={y}
+            month={m}
+            rows={rows}
+            monthHref={(mm) => eventsHref({ view: "calendar", month: mm, type: typeFilter })}
+            dayHref={(key) => `${eventsHref({ view: "calendar", month: currentMonth, type: typeFilter })}#day-${key}`}
+          />
+          <section className="space-y-2.5">
+            <h2 className="text-sm font-bold text-neutral-700">
+              {y}年{m}月の予定（{monthRows.length}件）
+            </h2>
+            {monthRows.length === 0 && (
+              <p className="rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-center text-sm text-neutral-400">
+                この月の予定はありません
+              </p>
+            )}
+            {monthRows.map(({ event, response }) => {
+              const key = jstDateKey(event.eventDate!);
+              return (
+                <div
+                  key={event.id}
+                  id={firstIdByDay.get(key) === event.id ? `day-${key}` : undefined}
+                  className="scroll-mt-20"
+                >
+                  <EventCard
+                    event={event}
+                    status={response?.status}
+                    note={response?.note}
+                    muted={key < todayKey}
+                  />
+                </div>
+              );
+            })}
+          </section>
+          {undatedRows.length > 0 && (
+            <section className="space-y-2.5">
+              <h2 className="text-sm font-bold text-neutral-700">日時未定</h2>
+              {undatedRows.map(({ event, response }) => (
+                <EventCard key={event.id} event={event} status={response?.status} note={response?.note} />
+              ))}
+            </section>
+          )}
+        </>
       ) : (
         <>
           {upcomingRows.length === 0 && (
-            <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-400">
-              {typeFilter ? "今後の該当イベントはありません" : "今後のイベントはありません"}
+            <p className="rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-center text-sm text-neutral-400">
+              {typeFilter ? "これからの該当する予定はありません" : "これからの予定はありません"}
             </p>
           )}
-          <ul className="space-y-3">
+          <div className="space-y-2.5">
             {upcomingRows.map(({ event, response }) => (
-              <EventListItem key={event.id} event={event} response={response} />
+              <EventCard key={event.id} event={event} status={response?.status} note={response?.note} />
             ))}
-          </ul>
-
-          <div className="pt-1">
-            <Link
-              href={eventsHref({ view: currentView, month: currentMonth, type: typeFilter, past: !showPast })}
-              className="block w-full rounded-xl border border-dashed border-neutral-300 px-4 py-2.5 text-center text-xs font-semibold text-neutral-500"
-            >
-              {showPast ? "過去のイベントを隠す ▲" : `過去のイベントを表示 ▾ (${pastRows.length}件)`}
-            </Link>
           </div>
 
+          <Link
+            href={eventsHref({ view: "list", type: typeFilter, past: !showPast })}
+            className="block w-full rounded-xl border border-dashed border-neutral-300 py-2.5 text-center text-xs font-semibold text-neutral-500"
+          >
+            {showPast ? "過去の予定を隠す ▲" : `過去の予定を表示 ▾（${pastRows.length}件）`}
+          </Link>
+
           {showPast && (
-            <div className="space-y-3">
-              <p className="pt-1 text-xs font-semibold text-neutral-400">過去のイベント</p>
-              {pastRows.length === 0 && (
-                <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-400">
-                  過去のイベントはありません
-                </p>
-              )}
-              <ul className="space-y-3 opacity-70">
-                {pastRows.map(({ event, response }) => (
-                  <EventListItem key={event.id} event={event} response={response} />
-                ))}
-              </ul>
+            <div className="space-y-2.5">
+              {pastRows.map(({ event, response }) => (
+                <EventCard key={event.id} event={event} status={response?.status} note={response?.note} muted />
+              ))}
             </div>
           )}
         </>
       )}
     </div>
-  );
-}
-
-function EventListItem({
-  event,
-  response,
-}: {
-  event: { id: string; type: string; title: string; eventDate: Date | null; location: string | null; isOpen: boolean };
-  response?: { status: keyof typeof STATUS_LABEL } | null;
-}) {
-  return (
-    <li>
-      <Link
-        href={`/events/${event.id}`}
-        className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white px-4 py-3 shadow-sm"
-      >
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700">
-              {EVENT_TYPE_LABELS[event.type] ?? event.type}
-            </span>
-            {!event.isOpen && (
-              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-500">
-                締切
-              </span>
-            )}
-          </div>
-          <p className="font-semibold text-neutral-900">{event.title}</p>
-          <p className="text-xs text-neutral-500">{formatDateTime(event.eventDate)}</p>
-          {event.location && (
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-400">
-              <span aria-hidden>📍</span>
-              {event.location}
-            </p>
-          )}
-        </div>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-            response ? STATUS_BADGE_CLASS[response.status] : UNANSWERED_BADGE_CLASS
-          }`}
-        >
-          {response ? STATUS_LABEL[response.status] : "未回答"}
-        </span>
-      </Link>
-    </li>
   );
 }

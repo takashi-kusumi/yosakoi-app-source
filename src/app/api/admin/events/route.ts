@@ -50,5 +50,5 @@ export async function POST(request: NextRequest) {
     feeAmount,
   });
 
-  return redirectWithMessage(request, "/admin", { ok: "イベントを作成しました" });
+  return redirectWithMessage(request, "/admin", { ok: "予定を作成しました" });
 }

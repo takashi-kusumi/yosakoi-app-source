@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentMember } from "@/lib/auth";
 import { getObjectBytes, deleteObject } from "@/lib/storage";
 import { redirectWithMessage } from "@/lib/formRedirect";
-import { resolveAppUrl } from "@/lib/line";
+import { resolveAppUrl } from "@/lib/appUrl";
 
 export async function GET(
   request: NextRequest,
@@ -70,8 +70,8 @@ export async function POST(
     return redirectWithMessage(request, `/events/${eventId}`, { error: "写真が見つかりません" });
   }
 
-  const canDelete = member.role === "ADMIN" || photo.uploadedBy === member.id;
-  if (!canDelete) {
+  // 写真の追加・削除は管理者のみ
+  if (member.role !== "ADMIN") {
     return redirectWithMessage(request, `/events/${eventId}`, {
       error: "この写真を削除する権限がありません",
     });

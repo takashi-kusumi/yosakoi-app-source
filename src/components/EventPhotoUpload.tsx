@@ -108,7 +108,7 @@ export function EventPhotoUpload({ eventId }: { eventId: string }) {
         className={`block w-full cursor-pointer rounded-lg border border-dashed px-3 py-3 text-center text-sm font-semibold ${
           uploading
             ? "border-neutral-300 bg-neutral-100 text-neutral-400"
-            : "border-orange-300 bg-orange-50 text-orange-700"
+            : "border-orange-300 bg-orange-50 text-orange-700 rounded-xl"
         }`}
       >
         {uploading ? `アップロード中… (${progress?.done ?? 0}/${progress?.total ?? 0})` : "＋ 写真を追加"}

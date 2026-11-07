@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { events, members, responses } from "@/db/schema";
+import { events, responses, eventPhotos } from "@/db/schema";
+import { deleteObject } from "@/lib/storage";
 import { and, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth";
 import { redirectWithMessage, safeRedirectTarget } from "@/lib/formRedirect";
@@ -26,8 +27,10 @@ export async function POST(
 
   if (action === "close") {
     await db.update(events).set({ isOpen: false, updatedAt: new Date() }).where(eq(events.id, eventId));
+    return redirectWithMessage(request, redirectTo, { ok: "回答の受付を締め切りました" });
   } else if (action === "reopen") {
     await db.update(events).set({ isOpen: true, updatedAt: new Date() }).where(eq(events.id, eventId));
+    return redirectWithMessage(request, redirectTo, { ok: "回答の受付を再開しました" });
   } else if (action === "update") {
     const type = formData.get("type");
     const title = String(formData.get("title") || "").trim();
@@ -86,60 +89,21 @@ export async function POST(
     return redirectWithMessage(request, `/admin/events/${eventId}`, {
       ok: "参加費の状況を更新しました",
     });
-  } else if (action === "updateGuest") {
-    // 体験参加者（ゲスト）の名前・メールアドレス・このイベントでの参加状況を訂正する。
-    // isGuest=false のメンバーはここでは一切変更できないようにガードする。
-    const memberId = String(formData.get("memberId") || "");
-    const displayName = String(formData.get("displayName") || "").trim();
-    const email = String(formData.get("email") || "").trim();
-    const status = formData.get("status");
-
-    const [guest] = await db.select().from(members).where(eq(members.id, memberId)).limit(1);
-    if (!guest || !guest.isGuest) {
-      return redirectWithMessage(request, `/admin/events/${eventId}`, {
-        error: "対象の体験参加者が見つかりません",
-      });
+  } else if (action === "delete") {
+    // 出欠の回答・写真の記録もカスケード削除される。写真ファイル本体はストレージからも消す
+    const photos = await db
+      .select({ objectKey: eventPhotos.objectKey })
+      .from(eventPhotos)
+      .where(eq(eventPhotos.eventId, eventId));
+    await db.delete(events).where(eq(events.id, eventId));
+    for (const p of photos) {
+      try {
+        await deleteObject(p.objectKey);
+      } catch (err) {
+        console.error("deleteObject failed", err);
+      }
     }
-    if (!displayName) {
-      return redirectWithMessage(request, `/admin/events/${eventId}`, {
-        error: "名前を入力してください",
-      });
-    }
-    if (status !== "ATTENDING" && status !== "NOT_ATTENDING") {
-      return redirectWithMessage(request, `/admin/events/${eventId}`, {
-        error: "参加状況が不正です",
-      });
-    }
-
-    await db
-      .update(members)
-      .set({ displayName, email: email || null, updatedAt: new Date() })
-      .where(eq(members.id, memberId));
-
-    await db
-      .update(responses)
-      .set({ status })
-      .where(and(eq(responses.eventId, eventId), eq(responses.memberId, memberId)));
-
-    return redirectWithMessage(request, `/admin/events/${eventId}`, {
-      ok: "体験参加者の情報を更新しました",
-    });
-  } else if (action === "deleteGuest") {
-    // 体験参加者（ゲスト）の記録を削除する。members行を削除すると、responses（このイベントの
-    // 参加記録）はカスケード削除される。isGuest=false のメンバーは削除できないようにガードする。
-    const memberId = String(formData.get("memberId") || "");
-    const [guest] = await db.select().from(members).where(eq(members.id, memberId)).limit(1);
-    if (!guest || !guest.isGuest) {
-      return redirectWithMessage(request, `/admin/events/${eventId}`, {
-        error: "対象の体験参加者が見つかりません",
-      });
-    }
-
-    await db.delete(members).where(eq(members.id, memberId));
-
-    return redirectWithMessage(request, `/admin/events/${eventId}`, {
-      ok: `${guest.displayName}さんの体験参加記録を削除しました`,
-    });
+    return redirectWithMessage(request, "/admin", { ok: "予定を削除しました" });
   }
 
   return redirectWithMessage(request, redirectTo);

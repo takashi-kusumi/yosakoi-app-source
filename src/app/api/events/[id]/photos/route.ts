@@ -14,6 +14,10 @@ export async function POST(
   if (!member) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
+  // 写真の追加は管理者のみ（一般メンバーは閲覧だけ）
+  if (member.role !== "ADMIN") {
+    return NextResponse.json({ error: "写真の追加は管理者のみ行えます" }, { status: 403 });
+  }
 
   const { id: eventId } = await context.params;
   const body = await request.json().catch(() => null);

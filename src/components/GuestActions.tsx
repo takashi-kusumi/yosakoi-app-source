@@ -2,31 +2,31 @@
 
 import { useState } from "react";
 
-/**
- * 管理者向け：体験参加者（ゲスト）の名前・参加状況の訂正、および削除。
- * isGuest=false の正部員に対しては表示されない（呼び出し側で絞り込み済み）。
- */
+/** 体験者の名前・参加状況・メモの訂正と削除（追加した本人と管理者にだけ表示する） */
 export function GuestActions({
   eventId,
   memberId,
   displayName,
-  email,
   status,
+  note,
+  redirectTo,
 }: {
   eventId: string;
   memberId: string;
   displayName: string;
-  email: string | null;
   status: "ATTENDING" | "NOT_ATTENDING" | "UNDECIDED";
+  note: string | null;
+  redirectTo: string;
 }) {
   const [editing, setEditing] = useState(false);
+  const action = `/api/events/${eventId}/guests`;
 
   if (!editing) {
     return (
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500"
+        className="rounded-full px-2 py-1 text-[11px] font-semibold text-neutral-400 hover:bg-neutral-100"
       >
         編集
       </button>
@@ -34,63 +34,58 @@ export function GuestActions({
   }
 
   return (
-    <div className="mt-2 w-full space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-2">
-      <form action={`/api/admin/events/${eventId}`} method="POST" className="space-y-2">
-        <input type="hidden" name="action" value="updateGuest" />
+    <div className="mt-2 w-full space-y-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+      <form action={action} method="POST" className="space-y-2">
+        <input type="hidden" name="action" value="update" />
         <input type="hidden" name="memberId" value={memberId} />
+        <input type="hidden" name="redirectTo" value={redirectTo} />
         <input
           name="displayName"
           defaultValue={displayName}
           required
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-xs"
-        />
-        <input
-          type="email"
-          name="email"
-          defaultValue={email ?? ""}
-          placeholder="メールアドレス（任意）"
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-xs"
+          maxLength={50}
+          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm"
         />
         <select
           name="status"
-          defaultValue={status}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-xs"
+          defaultValue={status === "NOT_ATTENDING" ? "NOT_ATTENDING" : "ATTENDING"}
+          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm"
         >
           <option value="ATTENDING">参加</option>
           <option value="NOT_ATTENDING">不参加</option>
         </select>
+        <input
+          name="note"
+          defaultValue={note ?? ""}
+          maxLength={100}
+          placeholder="メモ（任意）"
+          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm"
+        />
         <div className="flex gap-2">
-          <button
-            type="submit"
-            className="flex-1 rounded bg-orange-600 py-1 text-xs font-semibold text-white"
-          >
+          <button type="submit" className="flex-1 rounded-lg bg-orange-600 py-2 text-xs font-semibold text-white">
             保存
           </button>
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="flex-1 rounded border border-neutral-300 py-1 text-xs font-semibold text-neutral-500"
+            className="flex-1 rounded-lg border border-neutral-300 bg-white py-2 text-xs font-semibold text-neutral-500"
           >
             キャンセル
           </button>
         </div>
       </form>
       <form
-        action={`/api/admin/events/${eventId}`}
+        action={action}
         method="POST"
         onSubmit={(e) => {
-          if (!confirm(`${displayName}さんの体験参加記録を削除しますか？元に戻せません。`)) {
-            e.preventDefault();
-          }
+          if (!confirm(`${displayName}さんを削除しますか？`)) e.preventDefault();
         }}
       >
-        <input type="hidden" name="action" value="deleteGuest" />
+        <input type="hidden" name="action" value="delete" />
         <input type="hidden" name="memberId" value={memberId} />
-        <button
-          type="submit"
-          className="w-full rounded border border-red-200 py-1 text-xs font-semibold text-red-600"
-        >
-          削除する
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+        <button type="submit" className="w-full rounded-lg py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50">
+          この体験者を削除する
         </button>
       </form>
     </div>

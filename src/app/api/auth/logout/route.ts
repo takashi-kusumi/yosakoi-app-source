@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { destroySession } from "@/lib/auth";
-import { resolveAppUrl } from "@/lib/line";
+import { resolveAppUrl } from "@/lib/appUrl";
 
 export async function POST(request: NextRequest) {
   await destroySession();

@@ -13,51 +13,19 @@ export const EVENT_TYPE_OPTIONS = [
 export const VALID_EVENT_TYPES = ["PRACTICE", "FESTIVAL", "PARTY"] as const;
 export type EventTypeValue = (typeof VALID_EVENT_TYPES)[number];
 
-export const MEMBER_CATEGORY_LABELS: Record<string, string> = {
-  PERFORMER: "演者（踊り子/中旗/道具演出）",
-  SPECIALIST_FLAG: "専門職（大旗）",
-  SPECIALIST_VOICE: "専門職（歌手/MC）",
-  SUPPORT_GENERAL: "サポート（給水・鳴子拾い等）",
-  SUPPORT_MEDIA: "サポート（撮影）",
-  CHEER: "応援",
-  OTHER: "その他",
+/** 種類ごとの色（チップ・カレンダーの帯に使う）。ひと目で練習とイベントを見分けられるようにする */
+export const EVENT_TYPE_CHIP_CLASS: Record<string, string> = {
+  PRACTICE: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
+  FESTIVAL: "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
+  PARTY: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
+};
+export const EVENT_TYPE_BAR_CLASS: Record<string, string> = {
+  PRACTICE: "bg-sky-500",
+  FESTIVAL: "bg-orange-500",
+  PARTY: "bg-violet-500",
 };
 
-export const MEMBER_CATEGORY_OPTIONS = [
-  { value: "PERFORMER", label: "演者（踊り子/中旗/道具演出）" },
-  { value: "SPECIALIST_FLAG", label: "専門職（大旗）" },
-  { value: "SPECIALIST_VOICE", label: "専門職（歌手/MC）" },
-  { value: "SUPPORT_GENERAL", label: "サポート（給水・鳴子拾い等）" },
-  { value: "SUPPORT_MEDIA", label: "サポート（撮影）" },
-  { value: "CHEER", label: "応援" },
-  { value: "OTHER", label: "その他" },
-] as const;
-
-export const VALID_MEMBER_CATEGORIES = [
-  "PERFORMER",
-  "SPECIALIST_FLAG",
-  "SPECIALIST_VOICE",
-  "SUPPORT_GENERAL",
-  "SUPPORT_MEDIA",
-  "CHEER",
-  "OTHER",
-] as const;
-export type MemberCategoryValue = (typeof VALID_MEMBER_CATEGORIES)[number];
-
-export const SURVEY_QUESTION_TYPE_LABELS: Record<string, string> = {
-  TEXT: "自由記述",
-  SINGLE: "単一選択",
-  MULTI: "複数選択",
-};
-
-export const SURVEY_QUESTION_TYPE_OPTIONS = [
-  { value: "TEXT", label: "自由記述" },
-  { value: "SINGLE", label: "単一選択（1つだけ選ぶ）" },
-  { value: "MULTI", label: "複数選択（複数選べる）" },
-] as const;
-
-export const VALID_SURVEY_QUESTION_TYPES = ["TEXT", "SINGLE", "MULTI"] as const;
-export type SurveyQuestionType = (typeof VALID_SURVEY_QUESTION_TYPES)[number];
+export const MAX_RESPONSE_NOTE_LENGTH = 100;
 
 export function formatDateTime(date: Date | string | null): string {
   if (!date) return "日時未定";
@@ -72,22 +40,54 @@ export function formatDateTime(date: Date | string | null): string {
   }).format(d);
 }
 
+function jstParts(d: Date) {
+  const parts = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return {
+    month: get("month"),
+    day: get("day"),
+    weekday: get("weekday"),
+    time: `${get("hour")}:${get("minute")}`,
+  };
+}
+
+/** 「11/15(土) 18:00」のような短い表記。カードや一覧向け */
+export function formatEventDate(date: Date | string | null): string {
+  if (!date) return "日時未定";
+  const p = jstParts(typeof date === "string" ? new Date(date) : date);
+  return `${p.month}/${p.day}(${p.weekday}) ${p.time}`;
+}
+
+/** カードの左側に置く日付ブロック用（月・日・曜日・時刻を別々に返す） */
+export function eventDateBlock(date: Date | string | null) {
+  if (!date) return null;
+  return jstParts(typeof date === "string" ? new Date(date) : date);
+}
+
 export const STATUS_DOT_CLASS: Record<string, string> = {
-  ATTENDING: "bg-orange-600",
+  ATTENDING: "bg-emerald-500",
   NOT_ATTENDING: "bg-neutral-400",
   UNDECIDED: "bg-sky-400",
 };
 export const UNANSWERED_DOT_CLASS = "bg-amber-400";
 
 export const STATUS_BADGE_CLASS: Record<string, string> = {
-  ATTENDING: "bg-orange-100 text-orange-700",
+  ATTENDING: "bg-emerald-50 text-emerald-700",
   NOT_ATTENDING: "bg-neutral-100 text-neutral-500",
   UNDECIDED: "bg-sky-50 text-sky-700",
 };
 export const UNANSWERED_BADGE_CLASS = "bg-amber-50 text-amber-700";
 
 export const STATUS_TEXT_CLASS: Record<string, string> = {
-  ATTENDING: "text-orange-600",
+  ATTENDING: "text-emerald-600",
   NOT_ATTENDING: "text-neutral-400",
   UNDECIDED: "text-sky-600",
 };
@@ -126,29 +126,4 @@ export function parseJstDatetimeLocal(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) return null;
   const date = new Date(`${trimmed}:00+09:00`);
   return Number.isNaN(date.getTime()) ? null : date;
-}
-
-/**
- * アンケートが実際に回答受付中かどうか。isOpen=trueでも、closesAt（回答締切）を
- * 過ぎていれば実質的に締め切り扱いにする（管理者が手動で締め切るのを待たない）。
- */
-export function isSurveyOpen(survey: {
-  isOpen: boolean;
-  closesAt: Date | string | null;
-}): boolean {
-  if (!survey.isOpen) return false;
-  if (survey.closesAt && new Date(survey.closesAt).getTime() <= Date.now()) return false;
-  return true;
-}
-
-export function formatDate(date: Date | string | null): string {
-  if (!date) return "日時未定";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-    timeZone: "Asia/Tokyo",
-  }).format(d);
 }

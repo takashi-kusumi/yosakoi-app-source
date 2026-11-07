@@ -22,7 +22,7 @@ export default async function EditEventPage({
   return (
     <div className="space-y-4">
       <FlashMessage ok={ok} error={error} />
-      <h1 className="text-lg font-bold text-neutral-900">イベントを編集</h1>
+      <h1 className="text-xl font-bold tracking-tight text-neutral-900">予定を編集</h1>
 
       <EventForm
         action={`/api/admin/events/${event.id}`}

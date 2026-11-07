@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveAppUrl } from "@/lib/line";
+import { resolveAppUrl } from "@/lib/appUrl";
 
 /**
  * フォーム送信後のリダイレクト先を安全に決定する。

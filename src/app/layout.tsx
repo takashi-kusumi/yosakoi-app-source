@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "よさこいチーム管理",
-  description: "練習・祭り・道具・飲み会の出欠と管理をまとめて行うチーム管理アプリ",
+  description: "練習とイベントの出欠をかんたんに管理するチームアプリ",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

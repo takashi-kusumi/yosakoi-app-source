@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { getCurrentMember } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { redirectWithMessage, safeRedirectTarget } from "@/lib/formRedirect";
+import { MAX_RESPONSE_NOTE_LENGTH } from "@/lib/labels";
 
 export async function POST(
   request: NextRequest,
@@ -18,22 +19,22 @@ export async function POST(
 
   const formData = await request.formData();
   const status = formData.get("status");
-  const redirectTo = safeRedirectTarget(formData.get("redirectTo"), "/events");
+  const redirectTo = safeRedirectTarget(formData.get("redirectTo"), `/events/${eventId}`);
+  // メモ欄の無いフォーム（ホームのクイック回答）から送られた場合は、既存のメモを消さずに残す
+  const hasNote = formData.has("note");
+  const note = String(formData.get("note") ?? "").trim().slice(0, MAX_RESPONSE_NOTE_LENGTH);
 
   if (status !== "ATTENDING" && status !== "NOT_ATTENDING" && status !== "UNDECIDED") {
     return redirectWithMessage(request, redirectTo, { error: "回答が不正です" });
   }
 
-  // 画面上は締切後にフォームを非表示にしているだけなので、直接POSTされた場合に備えて
-  // サーバー側でも締切（isOpen=false）を必ず確認する（体験参加者追加と同じガード）。
+  // 画面上は締切後にフォームを隠しているだけなので、サーバー側でも締切を確認する
   const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
   if (!event) {
-    return redirectWithMessage(request, "/events", { error: "イベントが見つかりません" });
+    return redirectWithMessage(request, "/events", { error: "予定が見つかりません" });
   }
   if (!event.isOpen) {
-    return redirectWithMessage(request, redirectTo, {
-      error: "このイベントは回答受付を締め切っています",
-    });
+    return redirectWithMessage(request, redirectTo, { error: "この予定は回答受付を締め切っています" });
   }
 
   const [existing] = await db
@@ -45,7 +46,7 @@ export async function POST(
   if (existing) {
     await db
       .update(responses)
-      .set({ status, respondedAt: new Date() })
+      .set({ status, respondedAt: new Date(), ...(hasNote ? { note: note || null } : {}) })
       .where(eq(responses.id, existing.id));
   } else {
     await db.insert(responses).values({
@@ -53,6 +54,7 @@ export async function POST(
       eventId,
       memberId: member.id,
       status,
+      note: hasNote ? note || null : null,
     });
   }
 

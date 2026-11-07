@@ -22,7 +22,7 @@ export function EventForm({
     <form
       action={action}
       method="POST"
-      className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
+      className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
     >
       {hiddenFields?.map((field) => (
         <input key={field.name} type="hidden" name={field.name} value={field.value} />
@@ -34,7 +34,7 @@ export function EventForm({
           name="type"
           required
           defaultValue={defaultValues?.type ?? "PRACTICE"}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
         >
           {EVENT_TYPE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -51,8 +51,8 @@ export function EventForm({
           name="title"
           required
           defaultValue={defaultValues?.title ?? ""}
-          placeholder="例: 8月度合同練習"
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          placeholder="例: 定期練習"
+          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
         />
       </div>
 
@@ -62,7 +62,7 @@ export function EventForm({
           type="datetime-local"
           name="eventDate"
           defaultValue={defaultValues?.eventDateLocal ?? ""}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
         />
       </div>
 
@@ -75,7 +75,7 @@ export function EventForm({
           name="location"
           defaultValue={defaultValues?.location ?? ""}
           placeholder="例: 市民体育館 第2アリーナ"
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
         />
       </div>
 
@@ -88,7 +88,7 @@ export function EventForm({
           rows={4}
           defaultValue={defaultValues?.description ?? ""}
           placeholder="持ち物・注意事項などの補足"
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
         />
       </div>
 
@@ -102,13 +102,13 @@ export function EventForm({
           min={0}
           defaultValue={defaultValues?.feeAmount ?? ""}
           placeholder="空欄の場合は参加費なし"
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
         />
       </div>
 
       <button
         type="submit"
-        className="w-full rounded-lg bg-orange-600 py-2.5 text-sm font-semibold text-white"
+        className="w-full rounded-xl bg-orange-600 py-3 text-sm font-bold text-white"
       >
         {submitLabel}
       </button>

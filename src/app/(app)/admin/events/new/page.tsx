@@ -37,7 +37,7 @@ export default async function NewEventPage({
     <div className="space-y-4">
       <FlashMessage ok={ok} error={error} />
       <div>
-        <h1 className="text-lg font-bold text-neutral-900">イベントを作成</h1>
+        <h1 className="text-xl font-bold tracking-tight text-neutral-900">予定を作成</h1>
         {from && defaultValues && (
           <p className="mt-1 text-xs text-neutral-400">
             「{defaultValues.title}」の内容をコピーしました。日時を変更してください。

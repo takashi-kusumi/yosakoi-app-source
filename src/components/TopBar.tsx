@@ -1,45 +1,41 @@
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 
 export function TopBar({
   displayName,
-  role,
+  pictureUrl,
+  isAdmin,
 }: {
   displayName: string;
-  role: "ADMIN" | "MEMBER";
+  pictureUrl: string | null;
+  isAdmin: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">🎋</span>
-        <span className="text-sm font-bold text-neutral-900">
-          よさこいチーム管理
-        </span>
-      </div>
-      <div className="flex items-center gap-3">
-        {/*
-          管理者も含め、誰でも常に登録情報（学年・パート・部員の種類・メールアドレス）を
-          見直せるように、ここから常時 /register へ遷移できるようにする。
-          ダッシュボードのバナーはTRIAL（体験）の人にしか出ないため、その補完。
-        */}
-        <Link href="/register" className="text-right">
-          <p className="text-xs font-semibold text-neutral-700">
-            {displayName}
-            {role === "ADMIN" && (
-              <span className="ml-1 text-[10px] font-medium text-orange-600">
-                管理者
-              </span>
-            )}
-          </p>
-          <p className="text-[10px] text-neutral-400">登録情報 ›</p>
+    <header className="sticky top-0 z-20 border-b border-neutral-200/80 bg-white/90 backdrop-blur">
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-600 text-base">
+            🎋
+          </span>
+          <span className="text-[15px] font-bold tracking-tight text-neutral-900">よさこいチーム</span>
         </Link>
-        <form action="/api/auth/logout" method="POST">
-          <button
-            type="submit"
-            className="rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs text-neutral-500 hover:bg-neutral-50"
-          >
-            ログアウト
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Avatar name={displayName} pictureUrl={pictureUrl} size={28} />
+            <div className="hidden text-right sm:block">
+              <p className="max-w-32 truncate text-xs font-semibold text-neutral-700">{displayName}</p>
+              {isAdmin && <p className="text-[10px] font-medium text-orange-600">管理者</p>}
+            </div>
+          </div>
+          <form action="/api/auth/logout" method="POST">
+            <button
+              type="submit"
+              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 hover:bg-neutral-100"
+            >
+              ログアウト
+            </button>
+          </form>
+        </div>
       </div>
     </header>
   );

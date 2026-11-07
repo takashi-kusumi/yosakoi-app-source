@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { getEventWithResponses } from "@/lib/queries";
 import { STATUS_LABEL, formatDateTime } from "@/lib/labels";
-import { resolveAppUrl } from "@/lib/line";
+import { resolveAppUrl } from "@/lib/appUrl";
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -30,7 +30,7 @@ export async function GET(
     return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
   }
 
-  const rows: string[] = ["メンバー名,区分,回答,回答日時"];
+  const rows: string[] = ["メンバー名,区分,回答,メモ,回答日時"];
 
   for (const { member, response } of detail.answered) {
     rows.push(
@@ -38,12 +38,13 @@ export async function GET(
         csvEscape(member.displayName),
         member.isGuest ? "体験参加" : "メンバー",
         csvEscape(STATUS_LABEL[response.status] ?? response.status),
+        csvEscape(response.note ?? ""),
         csvEscape(formatDateTime(response.respondedAt)),
       ].join(",")
     );
   }
   for (const member of detail.unanswered) {
-    rows.push([csvEscape(member.displayName), "メンバー", "未回答", ""].join(","));
+    rows.push([csvEscape(member.displayName), "メンバー", "未回答", "", ""].join(","));
   }
 
   // Excelでの文字化けを避けるためUTF-8 BOMを付与
