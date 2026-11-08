@@ -5,7 +5,7 @@ import { STATUS_LABEL, formatDateTime } from "@/lib/labels";
 import { resolveAppUrl } from "@/lib/appUrl";
 
 function csvEscape(value: string): string {
-  if (/[",\n]/.test(value)) {
+  if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
@@ -30,12 +30,20 @@ export async function GET(
     return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
   }
 
-  const rows: string[] = ["メンバー名,区分,回答,メモ,回答日時,代理入力"];
+  // 入館証の発行などに使えるよう、メールアドレス（Googleアカウント）も出力する。
+  // 並び順は 参加 → 未定 → 不参加 → 未回答。体験参加者はメールアドレスが無いため空欄。
+  const rows: string[] = ["メンバー名,メールアドレス,区分,回答,メモ,回答日時,代理入力"];
 
-  for (const { member, response } of detail.answered) {
+  const statusOrder: Record<string, number> = { ATTENDING: 0, UNDECIDED: 1, NOT_ATTENDING: 2 };
+  const answered = [...detail.answered].sort(
+    (a, b) => (statusOrder[a.response.status] ?? 9) - (statusOrder[b.response.status] ?? 9)
+  );
+
+  for (const { member, response } of answered) {
     rows.push(
       [
         csvEscape(member.displayName),
+        csvEscape(member.googleEmail ?? ""),
         member.isGuest ? "体験参加" : "メンバー",
         csvEscape(STATUS_LABEL[response.status] ?? response.status),
         csvEscape(response.note ?? ""),
@@ -45,7 +53,9 @@ export async function GET(
     );
   }
   for (const member of detail.unanswered) {
-    rows.push([csvEscape(member.displayName), "メンバー", "未回答", "", "", ""].join(","));
+    rows.push(
+      [csvEscape(member.displayName), csvEscape(member.googleEmail ?? ""), "メンバー", "未回答", "", "", ""].join(",")
+    );
   }
 
   // Excelでの文字化けを避けるためUTF-8 BOMを付与
