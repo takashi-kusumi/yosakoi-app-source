@@ -163,5 +163,25 @@ export async function removeEventFromCalendar(googleEventId: string | null): Pro
   }
 }
 
+/**
+ * Google APIのエラー内容から、管理者向けの原因と対処を推測して返す。
+ * （連携の設定ミスはほぼこのどれかに当てはまる）
+ */
+export function explainCalendarError(message: string): string {
+  if (/accessNotConfigured|has not been used|SERVICE_DISABLED|is disabled/i.test(message)) {
+    return "Google Cloudで「Google Calendar API」が有効になっていません。APIとサービス →ライブラリから有効にしてください。";
+  }
+  if (/invalid_grant|invalid_client|Invalid JWT|unauthorized_client|PKCS8|private key|GOOGLE_SERVICE_ACCOUNT_JSON/i.test(message)) {
+    return "サービスアカウントの鍵（GOOGLE_SERVICE_ACCOUNT_JSON）が正しく貼り付けられていない可能性があります。JSONの中身を{から}まで全部貼り直してください。";
+  }
+  if (/\(404\)|notFound|Not Found/i.test(message)) {
+    return "カレンダーが見つかりません。GOOGLE_CALENDAR_ID が正しいか、そのカレンダーをサービスアカウントのメールアドレスに共有しているか確認してください。";
+  }
+  if (/\(403\)|forbidden|requiredAccessLevel|insufficient/i.test(message)) {
+    return "カレンダーへの書き込み権限がありません。サービスアカウントへの共有の権限を「予定の変更」にしてください。";
+  }
+  return `原因不明のエラーです: ${message.slice(0, 200)}`;
+}
+
 /** 予定の作成・更新後に呼ぶ: カレンダーへ反映し、IDをDBに保存する。失敗時はメッセージの補足文を返す */
 export const CALENDAR_ERROR_NOTE = "（Googleカレンダーへの反映に失敗しました。管理画面の「カレンダーに再反映」をお試しください）";

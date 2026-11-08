@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentMember } from "@/lib/auth";
-import { getEventWithResponses } from "@/lib/queries";
-import { formatEventDate, isEventOpen, formatDateTime } from "@/lib/labels";
+import { getEventWithResponses, getLastMinuteChanges, getEventComments } from "@/lib/queries";
+import { formatEventDate, isEventOpen, formatDateTime, STATUS_SHORT } from "@/lib/labels";
+import { LastMinuteChanges } from "@/components/LastMinuteChanges";
+import { ProxyRespondForm } from "@/components/ProxyRespondForm";
+import { EventComments } from "@/components/EventComments";
 import { FlashMessage } from "@/components/FlashMessage";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { TypeChip } from "@/components/EventCard";
@@ -27,6 +30,14 @@ export default async function AdminEventDetailPage({
   if (!detail) notFound();
   const { event } = detail;
   const open = isEventOpen(event);
+  const [lastMinute, comments] = await Promise.all([getLastMinuteChanges(event), getEventComments(event.id)]);
+  const lastMinuteIds = new Set(lastMinute.map((c) => c.change.memberId));
+  const proxyOptions = [
+    ...detail.unanswered.map((m) => ({ id: m.id, displayName: m.displayName, currentLabel: null })),
+    ...detail.answered
+      .filter((a) => !a.member.isGuest)
+      .map((a) => ({ id: a.member.id, displayName: a.member.displayName, currentLabel: STATUS_SHORT[a.response.status] })),
+  ];
   const selfPath = `/admin/events/${event.id}`;
   const action = `/api/admin/events/${event.id}`;
 
@@ -93,6 +104,8 @@ export default async function AdminEventDetailPage({
         </div>
       </section>
 
+      <LastMinuteChanges changes={lastMinute} />
+
       <ShareTextCard
         description="「告知」「リマインド（未回答者の名前入り）」「参加者への案内」から選べます。"
         templates={shareTemplates}
@@ -153,8 +166,13 @@ export default async function AdminEventDetailPage({
           nameById={detail.nameById}
           viewer={{ id: me.id, isAdmin: true }}
           redirectTo={selfPath}
+          lastMinuteIds={lastMinuteIds}
         />
       </section>
+
+      <ProxyRespondForm action={action} options={proxyOptions} />
+
+      <EventComments eventId={event.id} comments={comments} viewer={{ id: me.id, isAdmin: true }} redirectTo={selfPath} />
 
       <form action={action} method="POST">
         <input type="hidden" name="action" value="delete" />

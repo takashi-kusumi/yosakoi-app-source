@@ -30,7 +30,7 @@ export async function GET(
     return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
   }
 
-  const rows: string[] = ["メンバー名,区分,回答,メモ,回答日時"];
+  const rows: string[] = ["メンバー名,区分,回答,メモ,回答日時,代理入力"];
 
   for (const { member, response } of detail.answered) {
     rows.push(
@@ -40,11 +40,12 @@ export async function GET(
         csvEscape(STATUS_LABEL[response.status] ?? response.status),
         csvEscape(response.note ?? ""),
         csvEscape(formatDateTime(response.respondedAt)),
+        response.proxyBy ? "代理入力" : "",
       ].join(",")
     );
   }
   for (const member of detail.unanswered) {
-    rows.push([csvEscape(member.displayName), "メンバー", "未回答", "", ""].join(","));
+    rows.push([csvEscape(member.displayName), "メンバー", "未回答", "", "", ""].join(","));
   }
 
   // Excelでの文字化けを避けるためUTF-8 BOMを付与

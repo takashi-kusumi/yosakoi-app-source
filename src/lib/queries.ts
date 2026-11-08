@@ -13,10 +13,13 @@ import {
   surveyResponses,
   surveyAnswers,
   surveyAnswerOptions,
+  responseChanges,
+  eventComments,
 } from "@/db/schema";
-import { eq, and, asc, desc, inArray, gt } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, gt, gte } from "drizzle-orm";
 import { jstTodayKey, jstDateKey } from "@/lib/calendar";
 import { isEventOpen, isSurveyOpen } from "@/lib/labels";
+import { lastMinuteSince } from "@/lib/responses";
 
 /** 今後（今日以降・日時未定を含む）の募集中イベントと、本人の回答。日付の近い順 */
 export async function getUpcomingOpenEventsForMember(memberId: string) {
@@ -408,4 +411,59 @@ export async function getSurveyResults(surveyId: string) {
     unansweredMembers,
     questionResults,
   };
+}
+
+// ==================== 直前の変更・コメント ====================
+
+/** 予定の「直前の変更」（前日以降・締切後の回答の変更）。新しい順 */
+export async function getLastMinuteChanges(event: { id: string; eventDate: Date | null; responseDeadline: Date | null }) {
+  const since = lastMinuteSince(event);
+  if (!since) return [];
+  const rows = await db
+    .select({ change: responseChanges, memberName: members.displayName, isGuest: members.isGuest })
+    .from(responseChanges)
+    .innerJoin(members, eq(members.id, responseChanges.memberId))
+    .where(and(eq(responseChanges.eventId, event.id), gte(responseChanges.changedAt, since)))
+    .orderBy(desc(responseChanges.changedAt));
+  const changerIds = [...new Set(rows.map((r) => r.change.changedBy).filter((v): v is string => !!v))];
+  const changers = changerIds.length
+    ? await db.select({ id: members.id, displayName: members.displayName }).from(members).where(inArray(members.id, changerIds))
+    : [];
+  const nameById = new Map(changers.map((c) => [c.id, c.displayName]));
+  return rows.map((r) => ({
+    ...r,
+    proxyName:
+      r.change.changedBy && r.change.changedBy !== r.change.memberId ? nameById.get(r.change.changedBy) ?? "管理者" : null,
+  }));
+}
+
+/** 予定ごとの直前の変更の件数（管理画面の一覧のバッジ用）。対象は今後の予定のみ */
+export async function getLastMinuteChangeCounts(eventRows: { id: string; eventDate: Date | null; responseDeadline: Date | null }[]) {
+  const counts = new Map<string, number>();
+  const ids = eventRows.map((e) => e.id);
+  if (ids.length === 0) return counts;
+  const changes = await db
+    .select({ eventId: responseChanges.eventId, changedAt: responseChanges.changedAt })
+    .from(responseChanges)
+    .where(inArray(responseChanges.eventId, ids));
+  const sinceById = new Map(eventRows.map((e) => [e.id, lastMinuteSince(e)]));
+  for (const c of changes) {
+    const since = sinceById.get(c.eventId);
+    if (since && c.changedAt >= since) counts.set(c.eventId, (counts.get(c.eventId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+export async function getEventComments(eventId: string) {
+  return db
+    .select({
+      comment: eventComments,
+      memberName: members.displayName,
+      pictureUrl: members.pictureUrl,
+      role: members.role,
+    })
+    .from(eventComments)
+    .innerJoin(members, eq(members.id, eventComments.memberId))
+    .where(eq(eventComments.eventId, eventId))
+    .orderBy(asc(eventComments.createdAt));
 }

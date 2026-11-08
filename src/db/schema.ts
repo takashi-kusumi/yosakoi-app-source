@@ -95,6 +95,8 @@ export const responses = pgTable(
     status: responseStatusEnum("status").notNull(),
     // 回答に添えるひとことメモ（例: 「30分遅れます」「途中で抜けます」）
     note: text("note"),
+    // 管理者が本人の代わりに入力した場合、その管理者のID（本人が回答し直すとnullに戻る）
+    proxyBy: text("proxy_by").references(() => members.id, { onDelete: "set null" }),
     respondedAt: timestamp("responded_at", { withTimezone: true }).notNull().defaultNow(),
     // イベント参加費の支払い状況（events.feeAmountが設定されている場合のみ意味を持つ）
     feePaid: boolean("fee_paid").notNull().default(false),
@@ -104,6 +106,44 @@ export const responses = pgTable(
     uniqueIndex("event_member_unique").on(table.eventId, table.memberId),
     index("responses_member_idx").on(table.memberId),
   ]
+);
+
+// 出欠の回答の変更履歴（「直前の変更」を管理者が見落とさないようにするため）
+export const responseChanges = pgTable(
+  "response_changes",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    // 変更前の回答（初めての回答ならnull）
+    fromStatus: responseStatusEnum("from_status"),
+    toStatus: responseStatusEnum("to_status").notNull(),
+    // 変更した人（本人、または代理入力した管理者）
+    changedBy: text("changed_by").references(() => members.id, { onDelete: "set null" }),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("response_changes_event_idx").on(table.eventId, table.changedAt)]
+);
+
+// 予定ごとの質問・コメント
+export const eventComments = pgTable(
+  "event_comments",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("event_comments_event_idx").on(table.eventId, table.createdAt)]
 );
 
 export const eventPhotos = pgTable(

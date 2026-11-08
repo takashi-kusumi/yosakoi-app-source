@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentMember } from "@/lib/auth";
-import { getEventWithResponses, getEventPhotos } from "@/lib/queries";
+import { getEventWithResponses, getEventPhotos, getEventComments } from "@/lib/queries";
+import { EventComments } from "@/components/EventComments";
 import { formatEventDate, isEventOpen, deadlineLabel, formatDateTime } from "@/lib/labels";
 import { RespondForm } from "@/components/RespondForm";
 import { FlashMessage } from "@/components/FlashMessage";
@@ -24,7 +25,7 @@ export default async function EventDetailPage({
 
   const detail = await getEventWithResponses(id);
   if (!detail) notFound();
-  const photos = await getEventPhotos(id);
+  const [photos, comments] = await Promise.all([getEventPhotos(id), getEventComments(id)]);
 
   const { event } = detail;
   const open = isEventOpen(event);
@@ -185,6 +186,8 @@ export default async function EventDetailPage({
           </form>
         </section>
       )}
+
+      <EventComments eventId={event.id} comments={comments} viewer={{ id: member.id, isAdmin }} redirectTo={selfPath} />
 
       {(photos.length > 0 || isAdmin) && (
         <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">

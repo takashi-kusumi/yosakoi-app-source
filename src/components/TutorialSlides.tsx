@@ -20,12 +20,22 @@ export function TutorialSlides({
 
   return (
     <div className="flex flex-col">
-      <div className="flex min-h-64 flex-col items-center justify-center px-2 text-center">
-        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-4xl">
-          {slide.emoji}
+      <div className="flex flex-col items-center px-1 text-center">
+        <div className="flex h-56 w-full items-center justify-center overflow-hidden rounded-2xl bg-neutral-100 p-3">
+          {/* 全スライドの画像を先に読み込んでおき、表示中の1枚だけ見せる（切り替え時のちらつき防止） */}
+          {slides.map((s, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={s.image}
+              src={s.image}
+              alt={i === index ? s.imageAlt : ""}
+              aria-hidden={i !== index}
+              className={`max-h-full max-w-full rounded-xl object-contain shadow-sm ${i === index ? "" : "hidden"}`}
+            />
+          ))}
         </div>
-        <h2 className="text-lg font-bold text-neutral-900">{slide.title}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-600">{slide.body}</p>
+        <h2 className="mt-4 text-lg font-bold text-neutral-900">{slide.title}</h2>
+        <p className="mt-1.5 min-h-[4.5rem] text-sm leading-relaxed text-neutral-600">{slide.body}</p>
       </div>
 
       <div className="my-4 flex justify-center gap-1.5" aria-hidden>

@@ -26,6 +26,9 @@ export const EVENT_TYPE_BAR_CLASS: Record<string, string> = {
 };
 
 export const MAX_RESPONSE_NOTE_LENGTH = 100;
+export const MAX_COMMENT_LENGTH = 500;
+
+export const STATUS_SHORT: Record<string, string> = { ATTENDING: "参加", NOT_ATTENDING: "不参加", UNDECIDED: "未定" };
 
 export function formatDateTime(date: Date | string | null): string {
   if (!date) return "日時未定";

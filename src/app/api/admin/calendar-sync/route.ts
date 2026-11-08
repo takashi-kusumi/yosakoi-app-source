@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { redirectWithMessage } from "@/lib/formRedirect";
 import { resolveAppUrl } from "@/lib/appUrl";
 import { syncEventById } from "@/lib/eventSync";
-import { isCalendarSyncConfigured } from "@/lib/googleCalendar";
+import { explainCalendarError, isCalendarSyncConfigured } from "@/lib/googleCalendar";
 import { jstTodayKey } from "@/lib/calendar";
 
 /** 今日以降の予定を、まとめてGoogleカレンダーに反映し直す（連携を後から設定した場合や、失敗したときの再実行用） */
@@ -25,16 +25,20 @@ export async function POST(request: NextRequest) {
   const appUrl = resolveAppUrl(request.nextUrl.origin);
   let ok = 0;
   let failed = 0;
+  let firstError = "";
   for (const t of targets) {
     const r = await syncEventById(t.id, appUrl);
     if (r.status === "ok") ok++;
-    else if (r.status === "error") failed++;
+    else if (r.status === "error") {
+      failed++;
+      if (!firstError) firstError = r.message;
+    }
   }
   return redirectWithMessage(
     request,
     "/admin",
     failed > 0
-      ? { error: `${ok}件を反映しました（${failed}件は失敗しました）` }
+      ? { error: `${ok}件を反映しました（${failed}件は失敗しました）。${explainCalendarError(firstError)}` }
       : { ok: `今日以降の予定 ${ok}件をGoogleカレンダーに反映しました` }
   );
 }

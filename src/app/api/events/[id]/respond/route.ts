@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { events, responses } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { events } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { getCurrentMember } from "@/lib/auth";
-import { newId } from "@/lib/id";
 import { redirectWithMessage, safeRedirectTarget } from "@/lib/formRedirect";
 import { MAX_RESPONSE_NOTE_LENGTH, isEventOpen } from "@/lib/labels";
+import { saveResponse } from "@/lib/responses";
 
 export async function POST(
   request: NextRequest,
@@ -37,26 +37,14 @@ export async function POST(
     return redirectWithMessage(request, redirectTo, { error: "この予定は回答受付を締め切っています" });
   }
 
-  const [existing] = await db
-    .select()
-    .from(responses)
-    .where(and(eq(responses.eventId, eventId), eq(responses.memberId, member.id)))
-    .limit(1);
-
-  if (existing) {
-    await db
-      .update(responses)
-      .set({ status, respondedAt: new Date(), ...(hasNote ? { note: note || null } : {}) })
-      .where(eq(responses.id, existing.id));
-  } else {
-    await db.insert(responses).values({
-      id: newId(),
-      eventId,
-      memberId: member.id,
-      status,
-      note: hasNote ? note || null : null,
-    });
-  }
+  await saveResponse({
+    eventId,
+    memberId: member.id,
+    status,
+    note: hasNote ? note || null : undefined,
+    changedBy: member.id,
+    proxyBy: null,
+  });
 
   return redirectWithMessage(request, redirectTo, { ok: "回答しました" });
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getEventsWithCounts } from "@/lib/queries";
+import { getEventsWithCounts, getLastMinuteChangeCounts } from "@/lib/queries";
 import { jstDateKey, jstTodayKey } from "@/lib/calendar";
 import { isCalendarSyncConfigured } from "@/lib/googleCalendar";
 import { FlashMessage } from "@/components/FlashMessage";
@@ -29,6 +29,7 @@ export default async function AdminPage({
     upcoming.filter((r) => r.event.eventDate).slice(0, 15).map((r) => r.event),
     { appUrl: await getAppUrl() }
   );
+  const lastMinuteCounts = await getLastMinuteChangeCounts(upcoming.map((r) => r.event));
   const pastRows = rows.filter((r) => r.event.eventDate && jstDateKey(r.event.eventDate) < todayKey);
 
   const renderRow = ({ event, counts, activeMemberCount }: (typeof rows)[number], muted = false) => (
@@ -46,6 +47,11 @@ export default async function AdminPage({
         <p className="mt-1.5 text-[11px] text-neutral-400">
           未定 {counts.undecided} ・ 不参加 {counts.notAttending} ・ 未回答 {Math.max(0, activeMemberCount - counts.total)}
           {counts.guestAttending > 0 && ` ・ うち体験 ${counts.guestAttending}`}
+          {!muted && (lastMinuteCounts.get(event.id) ?? 0) > 0 && (
+            <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+              ⚠ 直前の変更 {lastMinuteCounts.get(event.id)}件
+            </span>
+          )}
         </p>
       }
     />

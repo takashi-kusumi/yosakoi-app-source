@@ -189,7 +189,7 @@ export default async function DashboardPage({
           month={m}
           rows={allRows}
           monthHref={(mm) => `/dashboard?month=${mm}`}
-          dayHref={(key) => `/events?month=${key.slice(0, 7)}#day-${key}`}
+          dayHref={(key) => `/events?month=${key.slice(0, 7)}${key < todayKey ? "&past=1" : ""}#day-${key}`}
         />
       </section>
     </div>

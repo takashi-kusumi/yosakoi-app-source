@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { db } from "@/db";
-import { events, members, responses } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { events, members } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { getCurrentMember } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { redirectWithMessage, safeRedirectTarget } from "@/lib/formRedirect";
 import { MAX_RESPONSE_NOTE_LENGTH, isEventOpen } from "@/lib/labels";
+import { saveResponse } from "@/lib/responses";
 
 /**
  * 体験参加者（ゲスト）の追加・訂正・削除。
@@ -53,12 +54,13 @@ export async function POST(
       })
       .returning();
 
-    await db.insert(responses).values({
-      id: newId(),
+    await saveResponse({
       eventId,
       memberId: guest.id,
       status: "ATTENDING",
       note: note || null,
+      changedBy: member.id,
+      proxyBy: null,
     });
 
     return redirectWithMessage(request, back, { ok: `${displayName}さんを体験者として追加しました` });
@@ -91,10 +93,14 @@ export async function POST(
       .update(members)
       .set({ displayName, updatedAt: new Date() })
       .where(eq(members.id, guest.id));
-    await db
-      .update(responses)
-      .set({ status, note: note || null })
-      .where(and(eq(responses.eventId, eventId), eq(responses.memberId, guest.id)));
+    await saveResponse({
+      eventId,
+      memberId: guest.id,
+      status,
+      note: note || null,
+      changedBy: member.id,
+      proxyBy: null,
+    });
     return redirectWithMessage(request, back, { ok: "体験者の情報を更新しました" });
   }
 

@@ -11,6 +11,7 @@ type Member = {
 type Response = {
   status: "ATTENDING" | "NOT_ATTENDING" | "UNDECIDED";
   note: string | null;
+  proxyBy?: string | null;
 };
 
 const GROUPS = [
@@ -27,6 +28,7 @@ export function AttendanceList({
   nameById,
   viewer,
   redirectTo,
+  lastMinuteIds,
 }: {
   eventId: string;
   answered: { member: Member; response: Response }[];
@@ -34,6 +36,8 @@ export function AttendanceList({
   nameById: Map<string, string>;
   viewer: { id: string; isAdmin: boolean };
   redirectTo: string;
+  /** 「直前の変更」があったメンバー（管理画面で目立たせる） */
+  lastMinuteIds?: Set<string>;
 }) {
   return (
     <div className="space-y-4">
@@ -59,6 +63,16 @@ export function AttendanceList({
                         {m.isGuest && (
                           <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold text-violet-700">
                             体験
+                          </span>
+                        )}
+                        {response.proxyBy && (
+                          <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-bold text-neutral-500">
+                            管理者が代理入力
+                          </span>
+                        )}
+                        {lastMinuteIds?.has(m.id) && (
+                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                            ⚠ 直前に変更
                           </span>
                         )}
                       </p>
