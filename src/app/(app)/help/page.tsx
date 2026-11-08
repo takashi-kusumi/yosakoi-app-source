@@ -23,6 +23,10 @@ export default async function HelpPage() {
             <dd className="mt-0.5 text-neutral-500">締切までは何度でも変えられます。予定の詳細を開いて、別のボタンを押してください。</dd>
           </div>
           <div>
+            <dt className="font-semibold text-neutral-700">たくさんの予定に一度に回答したい</dt>
+            <dd className="mt-0.5 text-neutral-500">ホームや「予定」タブの「まとめて回答」から、1画面で選んで一度に保存できます。</dd>
+          </div>
+          <div>
             <dt className="font-semibold text-neutral-700">メモだけ変えたいときは？</dt>
             <dd className="mt-0.5 text-neutral-500">メモを書き換えて、今の回答のボタンをもう一度押してください。</dd>
           </div>

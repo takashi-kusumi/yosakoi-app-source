@@ -93,9 +93,17 @@ export default async function EventsPage({
     <div className="space-y-4">
       <FlashMessage ok={ok} error={error} />
 
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-neutral-900">予定</h1>
-        <p className="mt-0.5 text-xs text-neutral-400">チームの予定をすべて見られます</p>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-neutral-900">予定</h1>
+          <p className="mt-0.5 text-xs text-neutral-400">チームの予定をすべて見られます</p>
+        </div>
+        <Link
+          href="/events/answer"
+          className="shrink-0 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700"
+        >
+          📝 まとめて回答
+        </Link>
       </div>
 
       <div className="flex rounded-xl bg-neutral-200/60 p-1">
