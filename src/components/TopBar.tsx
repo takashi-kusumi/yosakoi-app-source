@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { APP_NAME } from "@/lib/brand";
+import { AppLogo } from "@/components/AppLogo";
 
 export function TopBar({
   displayName,
@@ -15,7 +16,7 @@ export function TopBar({
     <header className="sticky top-0 z-20 border-b border-neutral-200/80 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
         <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-600 text-base">🎋</span>
+          <AppLogo size={32} />
           <span className="truncate text-[15px] font-bold tracking-tight text-neutral-900">{APP_NAME}</span>
         </Link>
         <Link

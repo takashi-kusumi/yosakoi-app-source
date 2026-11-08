@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentMember } from "@/lib/auth";
 import { isGoogleLoginConfigured } from "@/lib/google";
 import { APP_NAME } from "@/lib/brand";
+import { AppLogo } from "@/components/AppLogo";
 
 function GoogleLogo() {
   return (
@@ -43,9 +44,7 @@ export default async function LoginPage({
     <main className="flex flex-1 flex-col items-center justify-center bg-gradient-to-b from-orange-50 to-neutral-50 px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-600 text-3xl shadow-lg shadow-orange-600/20">
-            🎋
-          </div>
+          <AppLogo size={96} className="mx-auto mb-4 shadow-lg shadow-black/20" />
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{APP_NAME}</h1>
           <p className="mt-2 text-sm text-neutral-500">練習とイベントの出欠をかんたんに</p>
         </div>

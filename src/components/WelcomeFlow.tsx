@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TutorialSlides } from "@/components/TutorialSlides";
 import { MEMBER_SLIDES, ADMIN_SLIDE } from "@/lib/tutorial";
+import { AppLogo } from "@/components/AppLogo";
 
 /**
  * 初回ログイン時のWelcome。①フルネームの入力（必須） → ②使い方のスライド → 登録完了。
@@ -35,9 +36,7 @@ export function WelcomeFlow({ googleName, isAdmin }: { googleName: string; isAdm
         className="space-y-4"
       >
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-600 text-3xl shadow-lg shadow-orange-600/20">
-            🎋
-          </div>
+          <AppLogo size={96} className="mx-auto mb-4 shadow-lg shadow-black/20" />
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">ようこそ！</h1>
           <p className="mt-2 text-sm leading-relaxed text-neutral-500">
             はじめに、あなたのフルネームを教えてください。
