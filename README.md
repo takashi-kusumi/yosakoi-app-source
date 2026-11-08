@@ -1,131 +1,95 @@
 # よさこいチーム管理アプリ
 
-よさこいチームのメンバー管理アプリです。スマートフォンのブラウザから使うWebアプリで、以下を記録・管理できます。
+よさこいチームの練習・イベントの出欠をまとめるWebアプリです。スマートフォンのブラウザから使います（ホーム画面に追加するとアプリのように使えます）。
 
-- 練習への参加有無
-- よさこい祭りへの参加有無
-- よさこい道具の保有有無
-- 飲み会などイベントへの参加有無
-- 情報発信専用の「お知らせ」（集合場所の連絡、しおりPDFの共有など）
-- イベントごとの写真アルバム（メンバーが撮った写真をみんなでアップロード・閲覧）
+ログインはGoogleアカウント（Gmail）のみです。ログインするとそのまま使い始められ、初回だけフルネームの入力と使い方の説明（Welcome）が表示されます。**はじめてログインした人が自動的に管理者になります。**
 
-LINEログインでメンバーを認証し、未回答者・回答済みの人を分けてLINEでリマインドを送信できます。
+## 主な機能
 
-はじめてログインした人が自動的に管理者になります。招待コードなどの設定は不要です。
+**メンバー**
+
+- ホーム: 回答が必要な予定・次に参加する予定・未回答のアンケート・新着のお知らせ・カレンダー
+- 予定（練習・よさこい祭り・飲み会/イベント）への出欠回答（参加/未定/不参加＋メモ）。ホームのカードから直接回答、「まとめて回答」で複数を一度に回答
+- 予定の詳細: 参加状況（メモ付き）、体験者の追加、質問・コメント、写真の閲覧
+- 予定タブ: カレンダー/リスト表示、種類での絞り込み、過去の予定の表示切り替え
+- お知らせの閲覧（未読バッジ付き）、アンケートへの回答
+- プロフィール（名前の変更）、使い方（画像付きチュートリアル）
+
+**管理者**
+
+- 予定の作成・編集・複製・削除、毎週の予定の一括作成、回答締切、参加費の支払い管理、CSVダウンロード
+- 代理回答（口頭で聞いた出欠の入力）、直前の変更（前日以降・締切後の回答変更）の表示
+- お知らせ（PDF・画像の添付）、アンケートの作成と集計
+- メンバー管理（管理者の設定・利用停止）
+- LINEに貼る告知文の作成（告知・リマインド・参加者への案内・予定一覧）
+- Googleカレンダー連携（予定の作成・変更・削除を指定のカレンダーへ自動反映）
+- 写真のアップロード（Cloudflare R2）
 
 ## 使っている技術
 
-- [Next.js](https://nextjs.org/)（App Router） + TypeScript
-- [Drizzle ORM](https://orm.drizzle.team/) + PostgreSQL
-- LINEログイン（OAuth 2.1） / LINE Messaging API
-- Tailwind CSS
-- 写真の保存先: [Cloudflare R2](https://www.cloudflare.com/developer-platform/products/r2/)（S3互換オブジェクトストレージ）
+- [Next.js](https://nextjs.org/)（App Router） + TypeScript + Tailwind CSS
+- [Drizzle ORM](https://orm.drizzle.team/) + PostgreSQL（Neon / Supabase など）
+- Googleログイン（OAuth 2.0 / OpenID Connect）
+- Google Calendar API（サービスアカウント。任意）
+- 写真の保存先: [Cloudflare R2](https://www.cloudflare.com/developer-platform/products/r2/)（任意）
 - デプロイ先: [Vercel](https://vercel.com/)
 
-## セットアップガイド
+## セットアップ
 
-LINE DevelopersやVercelのアカウント作成からデプロイ、動作確認までの手順は
-[`SETUP_GUIDE.md`](./SETUP_GUIDE.md) にまとめています。**まずはこちらをご覧ください。**
+アカウント作成からデプロイ・動作確認までの手順は [`SETUP_GUIDE.md`](./SETUP_GUIDE.md) にまとめています。
 
 ## ローカル開発
 
 ```bash
 npm install
-
-# .env.example をコピーして .env を作成し、値を埋める
-cp .env.example .env
-
-# PostgreSQLに接続できる状態で、テーブルを作成
-npx drizzle-kit push
-
-# 開発サーバーを起動
-npm run dev
+cp .env.example .env   # 値を埋める
+npx drizzle-kit push   # テーブルを作成・更新
+npm run dev            # http://localhost:3000
 ```
 
-http://localhost:3000 で確認できます（LINEログインを試すには、LINE Developersの設定でコールバックURLに
-`http://localhost:3000/api/auth/line/callback` を追加し、`.env` の `APP_URL` を `http://localhost:3000` にしてください）。
+ローカルでGoogleログインを試すには、Google CloudのOAuthクライアントの「承認済みのリダイレクトURI」に
+`http://localhost:3000/api/auth/google/callback` を追加し、`.env` の `APP_URL` を `http://localhost:3000` にしてください。
+
+## 環境変数
+
+| 名前 | 必須 | 内容 |
+|---|---|---|
+| `DATABASE_URL` | ○ | PostgreSQLの接続文字列 |
+| `APP_URL` | ○ | アプリの公開URL（末尾スラッシュなし） |
+| `SESSION_SECRET` | ○ | ログインセッションの署名用（32文字以上のランダムな文字列） |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | ○ | GoogleログインのOAuthクライアント |
+| `GOOGLE_CALENDAR_ID` / `GOOGLE_SERVICE_ACCOUNT_JSON` | | Googleカレンダー連携（未設定なら連携しない） |
+| `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` | | 写真の保存先（未設定なら写真のアップロード不可） |
 
 ## ディレクトリ構成（主要なもの）
 
 ```
 src/
   app/
-    login/                LINEログイン画面
-    (app)/                ログイン必須のページ群
-      dashboard/           メンバーのホーム画面
-      events/               イベント一覧・詳細・回答
-      tools/                 道具の保有状況（自分の分）
-      notices/               お知らせ一覧・詳細
-      admin/                 管理者メニュー
-        events/               イベント作成・回答状況・リマインド送信
-        members/               メンバーの権限/有効無効管理
-        tools/                  道具マスタ管理・保有状況一覧
-        notices/               お知らせ作成・編集・削除
-    api/                    フォーム送信を受けるAPIルート群
-  db/
-    schema.ts               データベーススキーマ（Drizzle）
-    index.ts                 DB接続
-  lib/
-    auth.ts                  セッション管理
-    line.ts                   LINEログイン / Messaging API 連携
-    queries.ts                DBの読み取りクエリ
-  proxy.ts                  ルート保護（旧middleware.ts）
+    login/              Googleログイン画面
+    welcome/            初回のフルネーム入力・使い方
+    (app)/              ログイン必須のページ
+      dashboard/         ホーム
+      events/            予定の一覧・詳細・まとめて回答（answer/）
+      notices/           お知らせ
+      surveys/           アンケート
+      me/ help/          プロフィール・使い方
+      admin/             管理（予定・一括作成・お知らせ・アンケート・メンバー）
+    api/                フォーム送信を受けるAPIルート
+  components/           画面の部品
+  db/schema.ts          データベーススキーマ（Drizzle）
+  lib/                  認証・クエリ・Googleカレンダー連携・告知文の作成など
+  proxy.ts              ログイン必須ページの保護
+public/tutorial/        使い方の画像
 ```
 
 ## データモデル
 
-- `members`: メンバー（LINEユーザーIDと1対1で紐づく）。役割は `ADMIN` / `MEMBER`。
-- `events`: 練習・よさこい祭り・飲み会などのイベント（場所の入力に対応）。
-- `responses`: メンバーごとのイベントへの回答（参加/不参加）。
-- `tool_items` / `member_tools`: 道具の項目マスタと、メンバーごとの保有状況。
-- `notices` / `notice_attachments`: 情報発信用のお知らせと、その添付ファイル（PDF・画像。DBに直接保存）。
-- `event_photos`: イベントごとの写真（本体はCloudflare R2に保存し、DBにはメタデータのみ保存）。
-- `groups` / `member_groups`: パートなどのグループと、メンバーの所属（アンケートの対象者を絞り込むために使う）。
-- `surveys` / `survey_target_groups` / `survey_questions` / `survey_options` / `survey_responses` / `survey_answers` / `survey_answer_options`:
-  自由記述アンケート（Googleフォームのような機能）。質問は自由記述・単一選択・複数選択に対応し、回答は記名式。
-
-## 主な機能
-
-- メンバー: LINEログイン、イベントへの参加/不参加の回答（カレンダー表示・種類別の絞り込みにも対応）、道具の保有状況の更新、
-  お知らせの確認（PDFしおりなどの添付ファイルのダウンロード）、イベント詳細画面での写真のアップロード・閲覧・削除（自分がアップロードした写真のみ削除可）、
-  アンケートへの回答（対象になっているものだけ表示。受付中は再回答で上書き可能）
-- 管理者: イベント作成・編集・複製・締切、回答状況の確認、出欠データのCSVダウンロード、
-  未回答者/回答済みの人へのLINEリマインド送信、メンバーの権限変更・無効化、
-  道具マスタの管理（メンバーごとの保有状況を管理者が直接編集可能）、
-  お知らせの作成・編集・削除（イベントとの紐付け、PDF・画像ファイルの添付）、
-  グループ管理（パートなどを登録し、メンバーを所属させる）、
-  アンケートの作成・編集・締切・削除・結果集計（自由記述の一覧表示、選択式の集計バー表示）、
-  対象を「全員」または「特定グループ」に絞り込み、未回答者へのLINEリマインド送信
-- スマートフォンのホーム画面に追加すると、アプリのようなアイコン・全画面表示で使えます（PWA対応）
-
-### アンケートの質問編集について
-
-アンケートの質問内容を編集すると、その時点で溜まっていた回答はすべて削除されます（質問と回答の対応が
-崩れるのを防ぐための仕様上の割り切りです）。編集画面には既存の回答がある場合に警告が表示されます。
-対象者（全員 / グループ）や、タイトル・説明文だけの変更であれば回答は失われません。
-
-### お知らせの添付ファイルについて
-
-添付ファイルはVercel Blobなどのファイルストレージサービスをあらためて契約しなくてもよいように、
-データベースに直接保存する方式にしています。そのため1ファイル4MB・1回の送信で合計4MBまでという上限があります
-（Vercelのサーバーレス関数のリクエストサイズ上限に合わせています）。しおりPDFや集合場所の写真程度であれば
-十分な容量ですが、大量のファイルや高解像度画像を扱うようになった場合は、Vercel Blobなどの外部ストレージへの
-移行を検討してください。
-
-### イベント写真の保存先について
-
-イベント写真は「お知らせ」の添付ファイルとは違い、複数人が何十枚も投稿することを想定しているため、
-データベースには保存せず、[Cloudflare R2](https://www.cloudflare.com/developer-platform/products/r2/)
-（S3互換のオブジェクトストレージ）に保存する方式にしています。R2は無料枠が大きく
-（ストレージ10GB/月、リクエスト回数も月100万〜1000万回まで無料。2026年時点の料金）、
-かつダウンロード時の転送量（エグレス）が無料なので、写真の閲覧が増えても追加コストが発生しにくいのが利点です。
-
-アップロードはブラウザから直接R2に対して行われ、Vercelのサーバーレス関数を経由しません
-（Vercelのリクエストサイズ上限の影響を受けないようにするため）。また、アップロード前にブラウザ側で
-画像を自動的に縮小・圧縮（長辺1600px・JPEG品質80%程度）してから送信するため、スマートフォンで撮った
-3〜5MBの写真も、実際にアップロードされるのは数百KB程度になります。これにより、ストレージ容量・転送量の
-両方でコストを抑えています。
-
-`R2_ENDPOINT` などの環境変数（`.env.example` 参照）が設定されていない場合、写真アップロード機能は
-無効になりますが、他の機能（イベント回答、お知らせなど）には影響しません。設定方法は
-[`SETUP_GUIDE.md`](./SETUP_GUIDE.md) を参照してください。
+- `members`: メンバー（Googleアカウントと1対1）。役割は `ADMIN` / `MEMBER`。体験者（`is_guest`）もここに入る
+- `events`: 予定（種類・日時・終了時刻・場所・参加費・回答締切・GoogleカレンダーのID）
+- `responses`: 予定ごとの回答（参加/未定/不参加・メモ・参加費の支払い・代理入力者）
+- `response_changes`: 回答の変更履歴（直前の変更の表示に使う）
+- `event_comments`: 予定ごとの質問・コメント
+- `event_photos`: 予定ごとの写真（本体はR2、DBにはメタデータのみ）
+- `notices` / `notice_attachments`: お知らせと添付ファイル（添付はDBに保存。1回の送信で合計4MBまで）
+- `surveys` / `survey_questions` / `survey_options` / `survey_responses` / `survey_answers` / `survey_answer_options`: アンケート（メンバー全員が対象）
