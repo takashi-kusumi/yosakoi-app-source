@@ -1,14 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { APP_NAME, APP_SHORT_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "よさこいチーム管理",
+  title: APP_NAME,
   description: "練習とイベントの出欠をかんたんに管理するチームアプリ",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "よさこい管理",
+    title: APP_SHORT_NAME,
   },
   icons: {
     icon: [

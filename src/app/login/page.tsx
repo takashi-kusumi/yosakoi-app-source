@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentMember } from "@/lib/auth";
 import { isGoogleLoginConfigured } from "@/lib/google";
+import { APP_NAME } from "@/lib/brand";
 
 function GoogleLogo() {
   return (
@@ -45,7 +46,7 @@ export default async function LoginPage({
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-600 text-3xl shadow-lg shadow-orange-600/20">
             🎋
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">よさこいチーム</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{APP_NAME}</h1>
           <p className="mt-2 text-sm text-neutral-500">練習とイベントの出欠をかんたんに</p>
         </div>
 
