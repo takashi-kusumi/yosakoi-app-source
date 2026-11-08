@@ -100,9 +100,9 @@ export default async function EventsPage({
         </div>
         <Link
           href="/events/answer"
-          className="shrink-0 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700"
+          className="shrink-0 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-600"
         >
-          📝 まとめて回答
+          まとめて回答
         </Link>
       </div>
 

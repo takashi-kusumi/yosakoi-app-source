@@ -88,24 +88,15 @@ export default async function DashboardPage({
             回答してください
             {unanswered.length > 0 && <span className="text-xs font-semibold text-amber-700">{unanswered.length}件</span>}
           </h2>
-          {unanswered.length >= 2 && (
-            <Link href="/events/answer" className="text-xs font-semibold text-orange-600">
-              まとめて回答 ›
+          {upcoming.length > 0 && (
+            <Link
+              href="/events/answer"
+              className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-600"
+            >
+              まとめて回答
             </Link>
           )}
         </div>
-        {unanswered.length >= 2 && (
-          <Link
-            href="/events/answer"
-            className="flex items-center justify-between rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 active:scale-[0.99]"
-          >
-            <span>
-              <span className="block text-sm font-bold text-orange-800">📝 {unanswered.length}件をまとめて回答する</span>
-              <span className="text-[11px] text-orange-700/80">1画面で選んで、最後に一度だけ保存できます</span>
-            </span>
-            <span className="text-orange-400">›</span>
-          </Link>
-        )}
         {unanswered.length === 0 ? (
           <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4 text-center text-sm font-medium text-emerald-700">
             募集中の予定は、すべて回答済みです
