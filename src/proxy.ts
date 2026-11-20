@@ -26,18 +26,14 @@ async function readSession(request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
   const session = await readSession(request);
 
   if (!session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (pathname.startsWith("/admin") && session.role !== "ADMIN") {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    dashboardUrl.searchParams.set("error", "管理者のみ利用できます");
-    return NextResponse.redirect(dashboardUrl);
-  }
+  // 管理画面に入れるかどうかは、ここ（クッキーの役割）ではなく admin/layout.tsx でデータベースの最新の役割を見て判定する。
+  // クッキーの役割はログインした時点のもので、あとから「管理者にする」「一般にする」を押しても変わらないため。
 
   return NextResponse.next();
 }
