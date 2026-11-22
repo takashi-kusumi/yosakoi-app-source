@@ -8,6 +8,7 @@ import { PageTitle } from "@/components/ui";
 import { ShareTextCard } from "@/components/ShareTextCard";
 import { scheduleShareTemplate } from "@/lib/shareText";
 import { getAppUrl } from "@/lib/serverAppUrl";
+import { EVENT_TYPE_OPTIONS } from "@/lib/labels";
 
 const tile = "flex flex-col gap-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-sm active:scale-[0.99]";
 
@@ -104,6 +105,33 @@ export default async function AdminPage({
             </button>
           </form>
         )}
+      </section>
+
+      <section className="rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-sm">
+        <p className="text-sm font-bold text-neutral-800">これからの予定をまとめてCSVダウンロード</p>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-neutral-400">
+          今日以降の予定を横に並べ、メンバーごとの回答を一覧にします（〇参加・×不参加・△未定・-未回答）。メールアドレス付き。
+        </p>
+        <form action="/api/admin/events/export" method="GET" className="mt-2.5 flex gap-2">
+          <select
+            name="type"
+            defaultValue=""
+            className="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-800"
+          >
+            <option value="">すべての種類</option>
+            {EVENT_TYPE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}だけ
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="shrink-0 rounded-lg bg-neutral-900 px-3.5 py-2 text-sm font-bold text-white"
+          >
+            ダウンロード
+          </button>
+        </form>
       </section>
 
       <ShareTextCard
